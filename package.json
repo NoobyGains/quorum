@@ -1,0 +1,20 @@
+{
+  "name": "quorum",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "build": "turbo run build",
+    "dev": "turbo run dev"
+  },
+  "devDependencies": {
+    "prettier": "3.8.3",
+    "turbo": "2.9.6",
+    "typescript": "5.8.3"
+  }
+}
