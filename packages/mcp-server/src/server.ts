@@ -1,8 +1,13 @@
 // @quorum/mcp-server — factory for the MCP server instance.
 //
-// Exposes createServer(), which returns a Server configured with the single
-// `ping` tool required by Phase 2 (issue #9). Future tools (artifact CRUD, etc.)
-// will be registered on top of this factory in M1.
+// Exposes createServer(), which returns a Server configured with:
+//   - the `ping` liveness probe (Phase 2 / issue #9)
+//   - 12 create tools, one per artifact type (M1 Wave 3 / issue #25)
+//   - 3 generic read/list/search tools (`artifact.*`)
+//
+// Tool dispatch is data-driven: we build a lookup table from the flat
+// `ARTIFACT_MCP_TOOLS` array plus the ping descriptor, then register a
+// single CallToolRequest handler that routes by name.
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
@@ -12,8 +17,18 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 
+import { Store } from "@quorum/store";
+
+import {
+  ARTIFACT_MCP_TOOLS,
+  type ToolContext,
+  type ToolDef,
+} from "./tools/index.js";
+
 export const MCP_SERVER_NAME = "quorum-mcp-server" as const;
 export const MCP_SERVER_VERSION = "0.0.0" as const;
+
+// --- `ping` tool -------------------------------------------------------------
 
 /** Zod schema for the `ping` tool input. Empty object — no parameters. */
 export const PingInputSchema = z.object({}).strict();
@@ -43,14 +58,35 @@ export function handlePing(): CallToolResult {
   };
 }
 
+// --- Store factory injection -------------------------------------------------
+
 /**
- * Create a configured MCP server instance with the `ping` tool registered.
- *
- * The server is *not* connected to any transport — the caller is responsible
- * for calling `server.connect(transport)`. This separation keeps the factory
- * testable against an in-memory transport.
+ * Options for `createServer`. `storeFactory` lets tests inject an in-memory
+ * or tmp-dir-backed Store without having to munge `process.cwd()`.
  */
-export function createServer(): Server {
+export interface CreateServerOptions {
+  /**
+   * Factory returning the Store that tool handlers should use. Called once
+   * per `createServer` invocation. Defaults to a Store rooted at
+   * `process.cwd()`.
+   */
+  storeFactory?: () => Store;
+}
+
+function defaultStoreFactory(): Store {
+  return new Store(process.cwd());
+}
+
+// --- Public factory ----------------------------------------------------------
+
+/**
+ * Create a configured MCP server instance. The server is *not* connected to
+ * any transport — the caller is responsible for calling `server.connect(...)`.
+ */
+export function createServer(opts: CreateServerOptions = {}): Server {
+  const store = (opts.storeFactory ?? defaultStoreFactory)();
+  const ctx: ToolContext = { store };
+
   const server = new Server(
     {
       name: MCP_SERVER_NAME,
@@ -63,14 +99,47 @@ export function createServer(): Server {
     },
   );
 
+  // Build a name -> ToolDef lookup for the artifact tools.
+  const toolsByName = new Map<string, ToolDef>(
+    ARTIFACT_MCP_TOOLS.map((t) => [t.name, t]),
+  );
+
+  // Advertised tool list. `ping` stays first so the existing contract is
+  // preserved; the artifact tools follow in a deterministic order.
+  const advertisedTools = [
+    PING_TOOL,
+    ...ARTIFACT_MCP_TOOLS.map((t) => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.jsonSchema,
+    })),
+  ];
+
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
-    tools: [PING_TOOL],
+    tools: advertisedTools,
   }));
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
 
-    if (name !== PING_TOOL.name) {
+    if (name === PING_TOOL.name) {
+      const parsed = PingInputSchema.safeParse(args ?? {});
+      if (!parsed.success) {
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: `Invalid arguments for ${name}: ${parsed.error.message}`,
+            },
+          ],
+        };
+      }
+      return handlePing();
+    }
+
+    const tool = toolsByName.get(name);
+    if (!tool) {
       return {
         isError: true,
         content: [
@@ -82,8 +151,10 @@ export function createServer(): Server {
       };
     }
 
-    // Validate input — `ping` accepts an empty object only.
-    const parsed = PingInputSchema.safeParse(args ?? {});
+    // Every artifact tool MUST validate its args via Zod before touching the
+    // store — otherwise the store's own ArtifactSchema.safeParse would throw
+    // late with a less helpful message.
+    const parsed = tool.inputSchema.safeParse(args ?? {});
     if (!parsed.success) {
       return {
         isError: true,
@@ -96,8 +167,16 @@ export function createServer(): Server {
       };
     }
 
-    return handlePing();
+    return tool.handler(parsed.data as never, ctx);
   });
+
+  // Ensure the injected Store is closed when the transport tears the server
+  // down. The SDK's `Server` exposes an `onclose` hook for exactly this.
+  const prevOnClose = server.onclose;
+  server.onclose = () => {
+    void store.close();
+    prevOnClose?.();
+  };
 
   return server;
 }

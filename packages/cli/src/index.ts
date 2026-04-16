@@ -5,7 +5,9 @@
 
 import { Command } from "commander";
 import { runDoctor } from "./commands/doctor.js";
+import { runInbox, type InboxOptions } from "./commands/inbox.js";
 import { runInit } from "./commands/init.js";
+import { runPresence, type PresenceOptions } from "./commands/presence.js";
 
 export const CLI_VERSION = "0.0.0" as const;
 
@@ -36,6 +38,27 @@ export function buildProgram(): Command {
       process.exit(code);
     });
 
+  program
+    .command("inbox")
+    .description("Print unread artifacts addressed to the current agent")
+    .option("--agent <name>", "agent name (default: $QUORUM_AGENT or 'claude')")
+    .option("--unread", "only show items newer than last seen, and advance the watermark")
+    .option("--since <iso>", "ISO timestamp lower bound")
+    .option("--json", "emit JSON instead of human-readable output")
+    .action(async (opts: InboxOptions) => {
+      const code = await runInbox({ flags: opts });
+      process.exit(code);
+    });
+
+  program
+    .command("presence")
+    .description("Print which agents have been active recently in this project")
+    .option("--json", "emit JSON instead of human-readable output")
+    .action(async (opts: PresenceOptions) => {
+      const code = await runPresence({ flags: opts });
+      process.exit(code);
+    });
+
   return program;
 }
 
@@ -60,7 +83,7 @@ const invokedDirectly =
 
 if (invokedDirectly) {
   main().catch((err) => {
-     
+
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
   });

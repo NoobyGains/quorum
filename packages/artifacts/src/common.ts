@@ -147,11 +147,14 @@ export function applyCommonDefaults<T extends { id: string }>(
       Pick<BaseArtifact, "created" | "version" | "supersedes" | "signatures">
     >,
 ): T & Pick<BaseArtifact, "created" | "version" | "supersedes" | "signatures"> {
+  // Spread the input first, then apply defaults — so an explicit
+  // `created: undefined` in the input gets replaced by the default instead
+  // of overriding it. Nullish coalescing preserves real values.
   return {
+    ...input,
     created: input.created ?? new Date().toISOString(),
     version: input.version ?? 1,
     supersedes: input.supersedes ?? null,
     signatures: input.signatures ?? [],
-    ...input,
   };
 }

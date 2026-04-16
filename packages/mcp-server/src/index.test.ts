@@ -1,6 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, beforeEach, describe, it, expect } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+import { Store } from "@quorum/store";
 
 import {
   MCP_SERVER_VERSION,
@@ -11,6 +16,31 @@ import {
   handlePing,
 } from "./server.js";
 import { MCP_SERVER_VERSION as IndexVersion } from "./index.js";
+
+// Helper: build a createServer that's backed by a tmp-dir Store so we don't
+// touch `process.cwd()` or the user's `~/.quorum/`. The caller owns cleanup
+// via the returned `dispose()`.
+function withTmpStore(): {
+  factory: () => Store;
+  dispose: () => Promise<void>;
+} {
+  const tmpHome = mkdtempSync(join(tmpdir(), "quorum-mcp-index-"));
+  const store = new Store("/fake/project/mcp-index-test", {
+    homeDir: tmpHome,
+    warn: () => {},
+  });
+  return {
+    factory: () => store,
+    dispose: async () => {
+      try {
+        await store.close();
+      } catch {
+        // server's onclose already closed it
+      }
+      rmSync(tmpHome, { recursive: true, force: true });
+    },
+  };
+}
 
 describe("@quorum/mcp-server", () => {
   it("re-exports a version string from the index barrel", () => {
@@ -46,8 +76,18 @@ describe("@quorum/mcp-server", () => {
   });
 
   describe("createServer()", () => {
+    let sink: { factory: () => Store; dispose: () => Promise<void> };
+
+    beforeEach(() => {
+      sink = withTmpStore();
+    });
+
+    afterEach(async () => {
+      await sink.dispose();
+    });
+
     it("returns a Server instance", () => {
-      const server = createServer();
+      const server = createServer({ storeFactory: sink.factory });
       expect(server).toBeDefined();
       // Server is an EventEmitter-backed class; this is a cheap sanity check.
       expect(typeof (server as unknown as { connect: unknown }).connect).toBe(
@@ -56,7 +96,7 @@ describe("@quorum/mcp-server", () => {
     });
 
     it("round-trips a ping over an in-memory transport", async () => {
-      const server = createServer();
+      const server = createServer({ storeFactory: sink.factory });
       const [clientTransport, serverTransport] =
         InMemoryTransport.createLinkedPair();
 
@@ -87,7 +127,7 @@ describe("@quorum/mcp-server", () => {
     });
 
     it("returns an isError result for unknown tools", async () => {
-      const server = createServer();
+      const server = createServer({ storeFactory: sink.factory });
       const [clientTransport, serverTransport] =
         InMemoryTransport.createLinkedPair();
 
@@ -107,6 +147,51 @@ describe("@quorum/mcp-server", () => {
           arguments: {},
         });
         expect(result.isError).toBe(true);
+      } finally {
+        await client.close();
+        await server.close();
+      }
+    });
+
+    it("advertises ping + 15 artifact tools (16 total)", async () => {
+      const server = createServer({ storeFactory: sink.factory });
+      const [clientTransport, serverTransport] =
+        InMemoryTransport.createLinkedPair();
+
+      const client = new Client(
+        { name: "test-client", version: "0.0.0" },
+        { capabilities: {} },
+      );
+
+      await Promise.all([
+        server.connect(serverTransport),
+        client.connect(clientTransport),
+      ]);
+
+      try {
+        const tools = await client.listTools();
+        const names = tools.tools.map((t) => t.name).sort();
+        expect(names).toEqual(
+          [
+            "ping",
+            "plan.create",
+            "claim.create",
+            "hypothesis.create",
+            "experiment.create",
+            "result.create",
+            "decision.create",
+            "question.create",
+            "commitment.create",
+            "disagreement.create",
+            "handoff.create",
+            "review.create",
+            "risk_flag.create",
+            "artifact.read",
+            "artifact.list",
+            "artifact.search",
+          ].sort(),
+        );
+        expect(tools.tools).toHaveLength(16);
       } finally {
         await client.close();
         await server.close();

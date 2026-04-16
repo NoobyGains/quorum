@@ -1,13 +1,10 @@
 {
-  "name": "@quorum/mcp-server",
-  "version": "0.0.0",
+  "name": "@quorum/protocols",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "bin": {
-    "quorum-mcp-server": "./dist/index.js"
-  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -18,14 +15,12 @@
     "build": "tsc --build",
     "typecheck": "tsc --build --noEmit",
     "test": "vitest run --passWithNoTests",
-    "lint": "echo 'lint not yet configured'",
+    "lint": "echo lint covered by root eslint",
     "dev": "tsc --build --watch"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
     "@quorum/artifacts": "workspace:*",
-    "@quorum/store": "workspace:*",
-    "zod": "3.25.76"
+    "@quorum/store": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "20.17.6",

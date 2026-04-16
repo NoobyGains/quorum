@@ -22,6 +22,8 @@
     "dev": "tsc --build --watch"
   },
   "dependencies": {
+    "@quorum/artifacts": "workspace:*",
+    "@quorum/store": "workspace:*",
     "commander": "14.0.3"
   },
   "devDependencies": {
