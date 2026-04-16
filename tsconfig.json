@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "./packages/artifacts" },
+    { "path": "./packages/store" },
     { "path": "./packages/mcp-server" },
     { "path": "./packages/cli" },
     { "path": "./packages/watchdog-client" }
