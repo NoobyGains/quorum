@@ -1,0 +1,69 @@
+name: Design spike
+description: A short investigation to decide a design, protocol, or schema question.
+title: "[spike] "
+labels: ["type:design", "type:spike"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Design spikes are short investigations that produce a **decision**, not production code. Timebox yourself (usually 1-3 days). The output is a Decision artifact that future Plans can cite.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: The question
+      description: What design decision needs to be made?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Why now
+      description: What's forcing this decision? Which Plans are blocked?
+    validations:
+      required: true
+
+  - type: textarea
+    id: options
+    attributes:
+      label: Options to evaluate
+      placeholder: |
+        - A) ...
+        - B) ...
+        - C) ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: criteria
+    attributes:
+      label: Evaluation criteria
+      description: How will you decide between options? Performance? Simplicity? Dependencies?
+    validations:
+      required: true
+
+  - type: input
+    id: timebox
+    attributes:
+      label: Timebox
+      placeholder: "3 days / 1 week"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Layer
+      options:
+        - L0-git-substrate
+        - L1-artifacts
+        - L2-protocols
+        - L3-watchdog
+        - L4-epistemic
+        - L5-routing
+        - L6-human-broker
+        - L7-observability
+        - cross-cutting
+    validations:
+      required: true

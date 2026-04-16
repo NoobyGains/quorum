@@ -1,0 +1,90 @@
+name: Feature
+description: A piece of concrete work — CLI command, MCP tool, protocol rule, dashboard view.
+title: "[feat] "
+labels: ["type:feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Features are concrete, buildable work. If you're proposing a *design* or protocol change, open a **design spike** instead.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why does this feature exist? What problem does it solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Desired behavior
+      description: What should it do? Concrete inputs and outputs.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How do we know it's done? Checklist preferred.
+      value: |
+        - [ ]
+        - [ ] Tests added
+        - [ ] Docs updated if protocol/interface changed
+    validations:
+      required: true
+
+  - type: dropdown
+    id: layer
+    attributes:
+      label: Architecture layer
+      description: Which of the 7 layers does this touch?
+      options:
+        - L0-git-substrate
+        - L1-artifacts
+        - L2-protocols
+        - L3-watchdog
+        - L4-epistemic
+        - L5-routing
+        - L6-human-broker
+        - L7-observability
+        - cross-cutting
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - mcp-server
+        - watchdog
+        - artifacts
+        - protocol
+        - cli
+        - dashboard
+        - calibration
+        - hooks
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - p0-critical
+        - p1-high
+        - p2-medium
+        - p3-low
+      default: 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Implementation notes (optional)
+      description: Any hints, gotchas, or references.

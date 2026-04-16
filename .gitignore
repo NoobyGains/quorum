@@ -1,0 +1,43 @@
+# deps
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+build/
+*.tsbuildinfo
+
+# env & secrets
+.env
+.env.local
+.env.*.local
+*.pem
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# editor/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# coverage
+coverage/
+.nyc_output/
+
+# quorum runtime state (local)
+.quorum/
+.worktrees/
+
+# python (for any tooling scripts)
+__pycache__/
+*.py[cod]
+.venv/
+
+# rust (for M1 watchdog)
+target/
+Cargo.lock

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Design discussions
+    url: https://github.com/NoobyGains/quorum/discussions/categories/design
+    about: Architecture, protocol, or schema proposals (pre-spike)
+  - name: Q&A
+    url: https://github.com/NoobyGains/quorum/discussions/categories/q-a
+    about: How do I use this? General questions that aren't bugs.
