@@ -60,7 +60,7 @@ const invokedDirectly =
 
 if (invokedDirectly) {
   main().catch((err) => {
-    // eslint-disable-next-line no-console
+     
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(1);
   });

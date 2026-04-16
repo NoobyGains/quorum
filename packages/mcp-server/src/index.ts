@@ -7,7 +7,7 @@
 // via package.json `bin`.
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createServer, MCP_SERVER_VERSION } from "./server.js";
+import { createServer } from "./server.js";
 
 export { createServer, MCP_SERVER_VERSION } from "./server.js";
 
@@ -32,7 +32,7 @@ const invokedDirectly = (() => {
 
 if (invokedDirectly) {
   main().catch((err: unknown) => {
-    // eslint-disable-next-line no-console
+     
     console.error("[quorum-mcp-server] fatal:", err);
     process.exit(1);
   });

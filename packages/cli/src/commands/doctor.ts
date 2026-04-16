@@ -92,7 +92,7 @@ export function defaultDoctorEnv(): DoctorEnv {
 export function parseNodeMajor(version: string): number {
   const match = /^v?(\d+)\./.exec(version);
   if (!match) return 0;
-  return Number.parseInt(match[1]!, 10);
+  return Number.parseInt(match[1], 10);
 }
 
 async function probeBinary(
@@ -263,7 +263,7 @@ export interface RunDoctorOptions {
  */
 export async function runDoctor(options: RunDoctorOptions = {}): Promise<0 | 1> {
   const env = options.env ?? defaultDoctorEnv();
-  // eslint-disable-next-line no-console
+   
   const log = options.log ?? ((msg: string) => console.log(msg));
   const results = await runChecks(env);
   log(formatReport(results));

@@ -30,8 +30,8 @@ jobs:
           cache: "pnpm"
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Lint
-        run: pnpm -r lint
+      - name: Lint (root ESLint over packages/**/src)
+        run: pnpm lint:root
 
   test:
     name: Test (${{ matrix.os }}, node ${{ matrix.node }})

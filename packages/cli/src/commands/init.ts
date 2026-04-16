@@ -72,24 +72,32 @@ export function initProject(env: InitEnv): InitResult {
   const configPath = join(stateDir, "config.json");
   const dbPath = join(stateDir, "state.db");
 
-  const alreadyInitialized = existsSync(configPath);
-  if (alreadyInitialized) {
+  const configExists = existsSync(configPath);
+  const dbExists = existsSync(dbPath);
+
+  // Only report already-initialized when BOTH markers are present. A missing
+  // state.db with an existing config.json means a previous run was
+  // interrupted (or state.db was manually deleted); repair instead of
+  // silently succeeding.
+  if (configExists && dbExists) {
     return { stateDir, alreadyInitialized: true };
   }
 
   mkdirSync(stateDir, { recursive: true });
 
-  const config: ProjectConfig = {
-    project_path: env.cwd,
-    created_at: env.now(),
-    version: CLI_VERSION,
-  };
-  writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+  if (!configExists) {
+    const config: ProjectConfig = {
+      project_path: env.cwd,
+      created_at: env.now(),
+      version: CLI_VERSION,
+    };
+    writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
+  }
 
   // Zero-byte placeholder — M1 worker for #20 replaces this with a real
   // SQLite database. Use `openSync`/`closeSync` so we don't accidentally
   // write a byte or trailing newline.
-  if (!existsSync(dbPath)) {
+  if (!dbExists) {
     const fd = openSync(dbPath, "w");
     closeSync(fd);
   }
@@ -108,7 +116,7 @@ export interface RunInitOptions {
  */
 export async function runInit(options: RunInitOptions = {}): Promise<0> {
   const env = options.env ?? defaultInitEnv();
-  // eslint-disable-next-line no-console
+   
   const log = options.log ?? ((msg: string) => console.log(msg));
 
   const result = initProject(env);

@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  unlinkSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -105,6 +112,35 @@ describe("initProject (filesystem side-effects)", () => {
     const a = initProject(envA);
     const b = initProject(envB);
     expect(a.stateDir).not.toBe(b.stateDir);
+  });
+
+  it("repairs a partial init where state.db was deleted", () => {
+    // Simulates an interrupted first run (or manual deletion of state.db)
+    // where config.json exists but state.db does not. The fix must NOT
+    // short-circuit — it must recreate state.db.
+    const env = makeEnv({
+      cwd: "/project/partial",
+      homeDir: tmpHome,
+      now: () => "2026-04-16T00:00:00.000Z",
+    });
+    const first = initProject(env);
+    expect(first.alreadyInitialized).toBe(false);
+
+    const dbPath = join(first.stateDir, "state.db");
+    unlinkSync(dbPath);
+    expect(existsSync(dbPath)).toBe(false);
+
+    const second = initProject(env);
+    // Not a no-op — we had to repair.
+    expect(second.alreadyInitialized).toBe(false);
+    // state.db must exist again as a zero-byte placeholder.
+    expect(existsSync(dbPath)).toBe(true);
+    expect(statSync(dbPath).size).toBe(0);
+    // config.json must be untouched (preserves original created_at).
+    const config = JSON.parse(
+      readFileSync(join(second.stateDir, "config.json"), "utf8"),
+    ) as ProjectConfig;
+    expect(config.created_at).toBe("2026-04-16T00:00:00.000Z");
   });
 });
 

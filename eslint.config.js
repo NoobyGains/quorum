@@ -25,12 +25,18 @@ export default tseslint.config(
       '**/coverage/**',
       '.turbo/**',
       '**/.turbo/**',
+      // Don't lint this config file with typed rules (it's plain JS and has
+      // no tsconfig entry). The file is small and self-contained.
+      'eslint.config.js',
     ],
   },
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+  // Typed-checked rules ONLY on package TS sources. Leaving them unscoped
+  // would cause ESLint to try typed rules on the flat-config file itself
+  // and fail with "You have used a rule which requires type information".
   {
     files: ['packages/**/src/**/*.ts'],
+    extends: [...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -58,6 +64,13 @@ export default tseslint.config(
         'error',
         { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
       ],
+
+      // require-await is overly strict for handler patterns: MCP tool
+      // handlers and commander .action callbacks are declared async to
+      // satisfy a Promise-returning contract even when they don't await.
+      // The real risks (unhandled rejections, misused promises) are
+      // already covered by no-floating-promises + no-misused-promises.
+      '@typescript-eslint/require-await': 'off',
     },
   },
   // Keep this last — it turns off rules that conflict with Prettier.
