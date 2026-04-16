@@ -9,20 +9,31 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint-and-typecheck:
-    name: Lint & typecheck
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Placeholder (M0 hasn't installed pnpm/scripts yet)
-        run: |
-          echo "CI scaffold in place. Enable real lint/typecheck in M0."
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm -r lint
 
-  test-matrix:
+  test:
     name: Test (${{ matrix.os }}, node ${{ matrix.node }})
     strategy:
       fail-fast: false
@@ -32,10 +43,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-      - name: Placeholder
-        run: |
-          echo "Test matrix placeholder. M0 replaces this with pnpm install && pnpm test."
-        shell: bash
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm -r typecheck
+      - name: Test
+        run: pnpm -r test
