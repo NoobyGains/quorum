@@ -25,6 +25,16 @@ describe("@quorum/cli", () => {
     expect(names).toContain("presence");
   });
 
+  it("registers the 'install' subcommand with its flags", () => {
+    const program = buildProgram();
+    const install = program.commands.find((c) => c.name() === "install");
+    expect(install).toBeDefined();
+    const help = install?.helpInformation() ?? "";
+    expect(help).toMatch(/--dry-run/);
+    expect(help).toMatch(/--uninstall/);
+    expect(help).toMatch(/--agent/);
+  });
+
   it("--help output lists all registered subcommands", () => {
     const program = buildProgram();
     // `helpInformation()` returns the text that `--help` would print.
@@ -33,6 +43,7 @@ describe("@quorum/cli", () => {
     expect(help).toMatch(/\binit\b/);
     expect(help).toMatch(/\binbox\b/);
     expect(help).toMatch(/\bpresence\b/);
+    expect(help).toMatch(/\binstall\b/);
   });
 
   it("inbox subcommand advertises its flags", () => {

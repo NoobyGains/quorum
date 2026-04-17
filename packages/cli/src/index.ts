@@ -7,6 +7,7 @@ import { Command } from "commander";
 import { runDoctor } from "./commands/doctor.js";
 import { runInbox, type InboxOptions } from "./commands/inbox.js";
 import { runInit } from "./commands/init.js";
+import { runInstall, type InstallOptions } from "./commands/install.js";
 import { runPresence, type PresenceOptions } from "./commands/presence.js";
 
 export const CLI_VERSION = "0.0.0" as const;
@@ -58,6 +59,43 @@ export function buildProgram(): Command {
       const code = await runPresence({ flags: opts });
       process.exit(code);
     });
+
+  program
+    .command("install")
+    .description(
+      "Register Quorum's MCP server and UserPromptSubmit hook with Claude Code and Codex",
+    )
+    .option("--dry-run", "print the planned changes without writing")
+    .option("--uninstall", "reverse a prior install")
+    .option(
+      "--agent <which>",
+      "scope: claude | codex | all",
+      (value: string) => {
+        if (value !== "claude" && value !== "codex" && value !== "all") {
+          throw new Error(
+            `--agent must be one of: claude, codex, all (got ${value})`,
+          );
+        }
+        return value;
+      },
+      "all" as InstallOptions["agent"],
+    )
+    .action(
+      async (opts: {
+        dryRun?: boolean;
+        uninstall?: boolean;
+        agent?: InstallOptions["agent"];
+      }) => {
+        const code = await runInstall({
+          opts: {
+            dryRun: opts.dryRun,
+            uninstall: opts.uninstall,
+            agent: opts.agent,
+          },
+        });
+        process.exit(code);
+      },
+    );
 
   return program;
 }

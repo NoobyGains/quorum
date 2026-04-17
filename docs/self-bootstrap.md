@@ -3,15 +3,41 @@
 Quorum is a working codebase with a passing test suite, but out of the box
 it's invisible: if you close your Claude Code or Codex window and open a
 new one, nothing is wired up. This doc walks you from "cloned the repo"
-to "open a fresh window, Quorum tools are there" in roughly ten minutes.
+to "open a fresh window, Quorum tools are there".
 
 It is **Windows-first** (most of the team is on Windows) with macOS / Linux
-notes inline. Until `quorum install` (issue #59) lands, this is the
-supported bootstrap path.
+notes inline.
 
 > **Status.** This document targets the state of `main` as of the merge
 > of issues #52–#60. If any step diverges from reality, that's a bug —
 > please open an issue labelled `type:docs`.
+
+---
+
+## TL;DR (the easy path)
+
+```bash
+git clone https://github.com/NoobyGains/quorum.git
+cd quorum
+pnpm install
+pnpm -r build
+cd packages/cli && npm link
+cd ../mcp-server && npm link
+cd ../..
+quorum install           # registers MCP + hook in ~/.claude.json,
+                         # ~/.claude/settings.json, ~/.codex/config.toml
+quorum doctor            # sanity-check the environment
+```
+
+Restart Claude Code (and Codex if you use it). Done.
+
+`quorum install --dry-run` prints the planned changes first.
+`quorum install --uninstall` cleanly reverses every file it touched.
+`quorum install --agent claude` or `--agent codex` scopes to one harness.
+
+The sections below document what `quorum install` does under the hood, and
+serve as a manual fallback if the installer can't do what you need (e.g.
+you want the hook to be *repo-local* rather than user-global).
 
 ---
 
