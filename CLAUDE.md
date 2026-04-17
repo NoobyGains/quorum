@@ -26,8 +26,8 @@ gh auth refresh -s project,write:discussion
 ```
 Then reopen the Claude session and I can create the board.
 
-### 24-issue backlog seeding — **partially seeded, may be incomplete**
-The session that shipped M1 dispatched a sub-agent to seed 24 follow-up issues from Codex's project review + session learnings. The machine was shut down before it finished. Check `gh issue list --state open` — if counts below ~34 (the 24 new + existing 10 M1 leftovers), re-dispatch the seeding worker. Full spec of the 24 issues lives in conversation history from commit `8ef2d75` — can reconstruct from Codex review + CLAUDE.md context.
+### 24-issue backlog seeding — **complete** (issues #52-#77, plus #58-#59 for bootstrap)
+Codex's 3 must_fix bugs (#52, #53, #54) + 4 should_fix bugs (#55-#57, #60) + 12 feature learnings (#61-#72) + 5 polish items (#73-#77). Plus bootstrap pair #58 (self-bootstrap doc) and #59 (`quorum install` command). `gh issue list --state open` should show ~36 open. Label gotcha: 6 store-related issues (#52, #53, #55, #56, #57, #77) use `area:artifacts` because there's no `area:store` label yet — relabel when that's added.
 
 ## Invariants
 
