@@ -1,0 +1,30 @@
+# dependencies
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+
+# next.js
+.next
+out
+
+# production
+build
+dist
+
+# test
+coverage
+
+# env
+.env
+.env.local
+.env.*.local
+
+# os
+.DS_Store
+Thumbs.db
+
+# editor
+.idea
+.vscode
+*.swp

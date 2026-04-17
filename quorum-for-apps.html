@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quorum for Apps — v2, post cross-vendor review</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1e222d;
+    --ink: #e6e7eb;
+    --ink-dim: #a0a4b0;
+    --accent: #7c9eff;
+    --accent-2: #8cd6a8;
+    --warn: #f2c14e;
+    --crit: #ef6464;
+    --line: #2a2f3d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, Segoe UI, Inter, Helvetica, Arial, sans-serif;
+    line-height: 1.55; }
+  main { max-width: 1100px; margin: 0 auto; padding: 48px 32px 96px; }
+  header { margin-bottom: 40px; }
+  .eyebrow { color: var(--accent); font-size: 13px; letter-spacing: 0.08em;
+    text-transform: uppercase; margin-bottom: 8px; }
+  h1 { font-size: 42px; line-height: 1.15; margin: 0 0 16px; letter-spacing: -0.02em; }
+  h2 { font-size: 24px; margin: 56px 0 20px; letter-spacing: -0.01em; }
+  h3 { font-size: 16px; margin: 0 0 8px; }
+  .lede { font-size: 19px; color: var(--ink-dim); max-width: 820px; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 999px;
+    background: var(--panel-2); color: var(--ink-dim); font-size: 12px;
+    letter-spacing: 0.04em; margin-right: 6px; }
+  .plan-ref { font-family: ui-monospace, Menlo, Consolas, monospace;
+    color: var(--accent-2); }
+
+  /* revision banner */
+  .revision { background: linear-gradient(180deg, #1a2230 0%, #151a24 100%);
+    border: 1px solid var(--accent); border-radius: 12px; padding: 20px 24px;
+    margin: 32px 0; }
+  .revision .rlabel { color: var(--accent); font-size: 12px;
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; }
+  .revision ul { margin: 0; padding-left: 22px; }
+  .revision li { margin-bottom: 6px; color: var(--ink); font-size: 14px; }
+  .revision li .strike { color: var(--ink-dim); text-decoration: line-through; }
+  .revision li .becomes { color: var(--accent-2); }
+
+  /* flow diagram */
+  .flow { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 28px; overflow-x: auto; }
+  .flow-inner { display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 12px; min-width: 920px; align-items: stretch; }
+  .node { background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 10px; padding: 14px 12px; text-align: center;
+    font-size: 13px; display: flex; flex-direction: column;
+    justify-content: center; min-height: 86px; }
+  .node .who { font-size: 11px; color: var(--ink-dim); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.06em; }
+  .node .what { font-weight: 600; }
+  .node.user { border-color: #3b4a6b; }
+  .node.claude { border-color: #3c5a4d; }
+  .node.codex { border-color: #5a3c53; }
+  .node.human { border-color: #6b4b2b; }
+  .arrow { display: flex; align-items: center; justify-content: center;
+    color: var(--ink-dim); font-size: 18px; }
+  .flow-legend { display: flex; gap: 16px; margin-top: 16px;
+    color: var(--ink-dim); font-size: 12px; flex-wrap: wrap; }
+  .swatch { display: inline-block; width: 10px; height: 10px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+  .sw-user { background: #3b4a6b; }
+  .sw-claude { background: #3c5a4d; }
+  .sw-codex { background: #5a3c53; }
+  .sw-human { background: #6b4b2b; }
+
+  /* components grid */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 20px; }
+  .card .num { font-family: ui-monospace, Menlo, Consolas, monospace;
+    color: var(--accent); font-size: 13px; margin-bottom: 6px; }
+  .card.deferred { opacity: 0.55; border-style: dashed; }
+  .card.deferred .num { color: var(--ink-dim); }
+  .card.deferred::after { content: "deferred to v1.1";
+    display: block; margin-top: 12px; font-size: 11px; color: var(--warn);
+    letter-spacing: 0.06em; text-transform: uppercase; }
+  .card p { margin: 8px 0 0; color: var(--ink-dim); font-size: 14px; }
+
+  /* timeline */
+  .timeline { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 20px; }
+  .week { display: grid; grid-template-columns: 90px 1fr;
+    gap: 20px; padding: 14px 0; border-bottom: 1px dashed var(--line); }
+  .week:last-child { border-bottom: none; }
+  .week .w-label { font-family: ui-monospace, Menlo, Consolas, monospace;
+    color: var(--accent); font-size: 13px; }
+  .week .w-body { font-size: 14px; }
+  .week .w-body strong { display: block; margin-bottom: 4px; }
+  .week .w-body .ship { color: var(--accent-2); font-size: 12px;
+    margin-top: 6px; display: inline-block; }
+
+  /* metric / science */
+  .sciencebox { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 24px; display: grid;
+    grid-template-columns: 1fr 1fr; gap: 20px; }
+  .sciencebox .col strong { color: var(--ink); display: block; margin-bottom: 4px; }
+  .sciencebox .col p { color: var(--ink-dim); font-size: 14px; margin: 0; }
+  .sciencebox .hypothesis { grid-column: 1 / -1;
+    padding: 16px; background: var(--panel-2); border-radius: 8px;
+    border-left: 3px solid var(--accent); font-size: 15px; }
+
+  /* comparison */
+  table.compare { width: 100%; border-collapse: collapse;
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; overflow: hidden; font-size: 13px; }
+  table.compare th, table.compare td { padding: 10px 12px;
+    text-align: left; border-bottom: 1px solid var(--line); }
+  table.compare th { background: var(--panel-2); color: var(--ink);
+    font-weight: 600; font-size: 12px; letter-spacing: 0.02em; }
+  table.compare td.yes { color: var(--accent-2); }
+  table.compare td.no { color: var(--ink-dim); }
+  table.compare td.partial { color: var(--warn); }
+  table.compare tr:last-child td { border-bottom: none; }
+
+  /* moat */
+  .moat { background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 24px; }
+  .moat .layer { display: grid; grid-template-columns: 180px 1fr; gap: 20px;
+    padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .moat .layer:last-child { border-bottom: none; }
+  .moat .layer .ltag { color: var(--accent); font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12px; }
+  .moat .oss { color: var(--accent-2); }
+  .moat .commercial { color: var(--warn); }
+
+  /* risks */
+  .risks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px; }
+  .risk { padding: 16px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel); font-size: 14px; }
+  .risk.high { border-left: 4px solid var(--crit); }
+  .risk.medium { border-left: 4px solid var(--warn); }
+  .risk.low { border-left: 4px solid var(--accent-2); }
+  .risk .sev { font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-dim); margin-bottom: 4px; }
+  .risk p { margin: 4px 0 0; color: var(--ink-dim); }
+
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line);
+    color: var(--ink-dim); font-size: 13px; }
+  footer a { color: var(--accent); text-decoration: none; }
+  code { font-family: ui-monospace, Menlo, Consolas, monospace;
+    background: var(--panel-2); padding: 1px 6px; border-radius: 4px;
+    font-size: 0.9em; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">
+      Plan <span class="plan-ref">pln_5926529d</span> · v2 · revised after
+      Review <span class="plan-ref">rev_50ff6aa0</span> (codex, verdict=block)
+    </div>
+    <h1>Quorum for Apps</h1>
+    <p class="lede">Cross-vendor <em>adversarial</em> review packaged for non-developers shipping real apps. Two different-vendor AIs don't just help build — they argue before anything lands. Every disagreement is a typed artifact you can scroll through, replay, and cite.</p>
+    <p style="margin-top:20px;">
+      <span class="tag">4-week MVP</span>
+      <span class="tag">Next.js only at launch</span>
+      <span class="tag">governance as moat</span>
+      <span class="tag">measured against single-agent control</span>
+    </p>
+  </header>
+
+  <div class="revision">
+    <div class="rlabel">What changed in v2 — Codex blocked the first draft. Five substantive cuts.</div>
+    <ul>
+      <li><span class="strike">Novelty: "cross-vendor review + audit trail"</span> → <span class="becomes">narrower: "cross-vendor <strong>adversarial</strong> review for non-developers building real apps."</strong> Factory, OpenHands, Codebuff, Windsurf already claim vendor-agnostic or review-heavy workflows.</span></li>
+      <li><span class="strike">3 templates (Next.js + WordPress + iOS)</span> → <span class="becomes">Next.js only. iOS is a week-one trap (Xcode / signing overhead); WordPress is a later vertical.</span></li>
+      <li><span class="strike">Audience: "vibe coders"</span> → <span class="becomes">founders &amp; operators already burned by silent AI failure, wanting receipts + second opinions. Pure non-devs are downstream.</span></li>
+      <li><span class="strike">Success metric: "&lt;2h to ship"</span> → <span class="becomes">rework / defect-escape rate vs. a single-agent control. Shipping fast proves scaffolding; beating the single-agent baseline proves the product.</span></li>
+      <li><span class="strike">Five MVP components</span> → <span class="becomes">three. Standalone web UI and decision-log viewer deferred to v1.1; artifact logging stays but runs behind the scenes.</span></li>
+    </ul>
+  </div>
+
+  <h2>The loop, visually</h2>
+  <div class="flow">
+    <div class="flow-inner">
+      <div class="node user"><div class="who">user</div><div class="what">prompt<br>"add booking calendar"</div></div>
+      <div class="arrow">→</div>
+      <div class="node claude"><div class="who">claude</div><div class="what">Plan artifact<br>goal + approach</div></div>
+      <div class="arrow">→</div>
+      <div class="node codex"><div class="who">codex</div><div class="what">Review<br>approve / block</div></div>
+      <div class="arrow">→</div>
+      <div class="node human"><div class="who">you, if split</div><div class="what">resolve<br>Disagreement</div></div>
+    </div>
+    <div class="flow-inner" style="margin-top:14px;">
+      <div class="node claude"><div class="who">claude</div><div class="what">write code</div></div>
+      <div class="arrow">→</div>
+      <div class="node codex"><div class="who">codex</div><div class="what">Review<br>of diff</div></div>
+      <div class="arrow">→</div>
+      <div class="node claude"><div class="who">claude</div><div class="what">fix findings</div></div>
+      <div class="arrow">→</div>
+      <div class="node user"><div class="who">ship</div><div class="what">Decision logged<br>→ git push</div></div>
+    </div>
+    <div class="flow-legend">
+      <span><span class="swatch sw-user"></span>you</span>
+      <span><span class="swatch sw-claude"></span>Claude (vendor A)</span>
+      <span><span class="swatch sw-codex"></span>Codex (vendor B)</span>
+      <span><span class="swatch sw-human"></span>human tiebreaker</span>
+    </div>
+  </div>
+
+  <h2>MVP components — three kept, two deferred</h2>
+  <div class="cards">
+    <div class="card">
+      <div class="num">01 · kept</div>
+      <h3>One-command install</h3>
+      <p><code>npm create quorum-app my-thing</code>. Scaffolds git, installs MCP, wires both agents. Zero CLI thereafter.</p>
+    </div>
+    <div class="card">
+      <div class="num">02 · kept</div>
+      <h3>Next.js template with review loop</h3>
+      <p>One opinionated web template. Conventions + test stubs so both agents agree what "done" means. Artifacts log behind the scenes.</p>
+    </div>
+    <div class="card">
+      <div class="num">03 · kept</div>
+      <h3>Hard spend cap + kill-switch</h3>
+      <p>Soft-warn at target, hard-stop at 2× with checkpoint-and-resume. Hygiene, not differentiation.</p>
+    </div>
+    <div class="card deferred">
+      <div class="num">04 · deferred</div>
+      <h3>Standalone web UI</h3>
+      <p>Live Plan→Review loop visualization. Moves to v1.1. MVP uses existing CLI + VS Code.</p>
+    </div>
+    <div class="card deferred">
+      <div class="num">05 · deferred</div>
+      <h3>Decision-log viewer</h3>
+      <p>Timeline of Plans/Reviews/Decisions. Moves to v1.1. Artifacts still captured — we just don't ship a browser for them at launch.</p>
+    </div>
+  </div>
+
+  <h2>Four-week timeline — Next.js only, measured</h2>
+  <div class="timeline">
+    <div class="week">
+      <div class="w-label">WEEK 1</div>
+      <div class="w-body">
+        <strong>Scaffolder + Next.js template + end-to-end loop on one feature</strong>
+        <span>Prove <code>npm create quorum-app</code> → Plan → Review → Implement → Review on a single working feature. Agents visible through the CLI / existing inbox UI.</span>
+        <span class="ship">Ship: scaffolder, one feature built live on video</span>
+      </div>
+    </div>
+    <div class="week">
+      <div class="w-label">WEEK 2</div>
+      <div class="w-body">
+        <strong>Spend cap + 5 users building real Next.js apps</strong>
+        <span>Hard budget enforcement. Recruit 5 founders/operators who've been burned by single-AI output; watch them build something that matters to them.</span>
+        <span class="ship">Ship: budget dial + usability report</span>
+      </div>
+    </div>
+    <div class="week">
+      <div class="w-label">WEEK 3</div>
+      <div class="w-body">
+        <strong>Single-agent control harness + outcome measurement</strong>
+        <span>Ship a "mirror" mode that runs the same feature request through Claude alone, no Codex review. Measure: completion, defect escapes 48h post-ship, rework rate, approval-without-reading-code rate. This is the paper-worthy evidence.</span>
+        <span class="ship">Ship: outcome benchmark vs. single-agent baseline</span>
+      </div>
+    </div>
+    <div class="week">
+      <div class="w-label">WEEK 4</div>
+      <div class="w-body">
+        <strong>Polish the Disagreement UX · public launch</strong>
+        <span>The one UX surface we can't defer: when the two agents split, the user sees a plain-English diff and picks a side. This is where cross-vendor review pays rent.</span>
+        <span class="ship">Ship: public launch post + benchmark data + 10 real shipped apps</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Success metric — measured against single-agent control</h2>
+  <div class="sciencebox">
+    <div class="hypothesis">
+      <strong>Hypothesis.</strong> Feature requests routed through two-vendor adversarial review produce materially fewer rework events and defect escapes than the same requests routed through a single agent — at acceptable latency and cost overhead.
+    </div>
+    <div class="col">
+      <strong>Primary outcome</strong>
+      <p>48-hour post-ship rework rate. Cross-vendor flow must be ≤ 50% of the single-agent control's rate on matched tasks to justify the cost.</p>
+    </div>
+    <div class="col">
+      <strong>Secondary outcome</strong>
+      <p>User willingness to approve a Plan without opening the code. Directly measures whether the review signal is trusted.</p>
+    </div>
+    <div class="col">
+      <strong>Guardrail</strong>
+      <p>Latency and $ per shipped feature stay within 2× of the single-agent baseline. Past that, cross-vendor review is a research toy, not a product.</p>
+    </div>
+    <div class="col">
+      <strong>What would kill the thesis</strong>
+      <p>If rework rate matches the single-agent control on tasks of meaningful complexity, the differentiator is ornamental and we pivot before week 4 ends.</p>
+    </div>
+  </div>
+
+  <h2>Where we fit (honestly)</h2>
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>Cursor / Windsurf</th>
+        <th>Lovable / v0 / Bolt</th>
+        <th>Replit Agent / GitHub Spark</th>
+        <th>Factory / OpenHands / Codebuff</th>
+        <th>Devin</th>
+        <th>Quorum for Apps</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Generate code fast</td>
+        <td class="yes">yes</td>
+        <td class="yes">yes</td>
+        <td class="yes">yes</td>
+        <td class="yes">yes</td>
+        <td class="yes">yes</td>
+        <td class="partial">on par</td>
+      </tr>
+      <tr>
+        <td>Non-dev-friendly UI</td>
+        <td class="no">no</td>
+        <td class="yes">yes</td>
+        <td class="yes">yes</td>
+        <td class="no">no</td>
+        <td class="no">no</td>
+        <td class="partial">MVP = CLI, UI v1.1</td>
+      </tr>
+      <tr>
+        <td>Vendor-agnostic / model-agnostic</td>
+        <td class="no">no</td>
+        <td class="no">no</td>
+        <td class="no">no</td>
+        <td class="partial">claimed</td>
+        <td class="no">no</td>
+        <td class="yes">two vendors by default</td>
+      </tr>
+      <tr>
+        <td>Traceability / audit trail</td>
+        <td class="no">chat log only</td>
+        <td class="no">no</td>
+        <td class="partial">session history</td>
+        <td class="partial">claimed</td>
+        <td class="no">no</td>
+        <td class="yes">typed artifacts</td>
+      </tr>
+      <tr>
+        <td><strong>Adversarial second-model Review</strong></td>
+        <td class="no">no</td>
+        <td class="no">no</td>
+        <td class="partial">self-test loop</td>
+        <td class="partial">reviewer role</td>
+        <td class="partial">automated review</td>
+        <td class="yes"><strong>core primitive</strong></td>
+      </tr>
+      <tr>
+        <td><strong>Open artifact schema / replay</strong></td>
+        <td class="no">no</td>
+        <td class="no">no</td>
+        <td class="no">no</td>
+        <td class="partial">partial</td>
+        <td class="no">no</td>
+        <td class="yes"><strong>git-native</strong></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="color:var(--ink-dim);font-size:13px;margin-top:10px;">Honest reading: we're alone on "adversarial second-model Review as a core primitive," and probably alone on "open artifact schema + replay in the user's own git repo." Every other row has at least one strong competitor.</p>
+
+  <h2>Moat — governance, not generation</h2>
+  <div class="moat">
+    <div class="layer">
+      <div class="ltag">L0-L2 · OSS</div>
+      <div><strong class="oss">Open-source</strong> the artifact protocol, git-ref scheme, and MCP server. Adoption + trust compound when anyone can read the format and run their own store.</div>
+    </div>
+    <div class="layer">
+      <div class="ltag">L3-L4 · OSS</div>
+      <div><strong class="oss">Open-source</strong> the watchdog daemon, disagreement protocol, and CLI. Lock-in here would kill community adoption and it isn't where the money is anyway.</div>
+    </div>
+    <div class="layer">
+      <div class="ltag">L5-L7 · commercial</div>
+      <div><strong class="commercial">Paid managed control plane:</strong> approval policy rules, reviewer-pool routing, org-scoped cost ceilings, exportable compliance evidence, hosted dashboards, SSO + audit log retention. Sold to the burned founder and the enterprise buyer that comes after.</div>
+    </div>
+  </div>
+  <p style="color:var(--ink-dim);font-size:13px;margin-top:10px;">The copyable part (ask a second model) is the L2 primitive. The defensible part is the policy layer that turns it into something a compliance officer can sign off on.</p>
+
+  <h2>Risks we're tracking — updated severity</h2>
+  <div class="risks">
+    <div class="risk high">
+      <div class="sev">high · market</div>
+      <p>Replit Agent and GitHub Spark already sell non-coders a build-test-refine loop. Factory, OpenHands, Codebuff, Windsurf lean into review-heavy or vendor-agnostic workflows. We must prove cross-vendor review changes outcomes, not just process.</p>
+    </div>
+    <div class="risk high">
+      <div class="sev">high · thesis</div>
+      <p>The load-bearing claim is that two vendors disagreeing catches things one vendor doesn't. If the outcome benchmark shows parity on real tasks, the product is ornamental. Kill the program fast in that case.</p>
+    </div>
+    <div class="risk medium">
+      <div class="sev">medium · user</div>
+      <p>Burned-founder hypothesis is plausible but unvalidated. Pre-ship signal: do prospects spontaneously ask for a second model after a failure? Tolerate slower runs for higher confidence? Pick Quorum over a single-agent control in repeated tests?</p>
+    </div>
+    <div class="risk medium">
+      <div class="sev">medium · cost</div>
+      <p>Two-vendor review is intrinsically slower and pricier than single-agent. Users must perceive the rework-avoidance savings as worth more than the latency + $ cost. If perception lags reality, we lose.</p>
+    </div>
+    <div class="risk low">
+      <div class="sev">low · scope</div>
+      <p>One template is credible in 4 weeks. Biggest residual execution risk is the measurement harness in week 3 — falling back to anecdotal evidence is acceptable if the harness slips but weakens the narrative.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>Plan <span class="plan-ref">pln_5926529d</span> · Review <span class="plan-ref">rev_50ff6aa0</span> (codex, block, 6 notes, 5 must-fix). This revision folds all five must-fixes. The should-fix on moat/pricing is addressed in the governance section above.</p>
+    <p>Both artifacts live in the git-backed Quorum store. Future readers can replay the full exchange — including what was cut, by whom, and why.</p>
+  </footer>
+</main>
+</body>
+</html>

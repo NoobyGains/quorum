@@ -29,8 +29,11 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# quorum runtime state (local)
+# quorum runtime state (local). Exception: template directories intentionally
+# ship a `.quorum/` with convention files that scaffolded apps use.
 .quorum/
+!packages/create-quorum-app/templates/**/.quorum/
+!packages/create-quorum-app/templates/**/.quorum/**
 .worktrees/
 
 # python (for any tooling scripts)
