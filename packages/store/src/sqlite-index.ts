@@ -78,14 +78,28 @@ function rowToArtifact(row: ArtifactRow): Artifact | null {
 
 /**
  * Filter shape for `query`. All fields are optional and conjoined as AND.
- * `createdAfter` compares lexicographically — safe because `created` is
- * a full ISO-8601 offset datetime (enforced by the Zod schema).
+ * `createdAfter` compares lexicographically — safe because artifact `created`
+ * values are Z-only (issue #56) AND callers are required to pass a Z-only
+ * cutoff. Non-Z inputs here would re-introduce the same ordering bug the
+ * schema tightening fixed, so we validate at the query boundary too.
  */
 export interface QueryFilter {
   type?: ArtifactType;
   author?: string;
   createdAfter?: string;
   limit?: number;
+}
+
+/** Matches `YYYY-MM-DDTHH:MM:SS(.sss)?Z` — same shape Zod's .datetime() accepts. */
+const Z_ONLY_ISO =
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
+
+function assertZOnlyCutoff(value: string): void {
+  if (!Z_ONLY_ISO.test(value)) {
+    throw new TypeError(
+      `createdAfter must be a Z-suffixed ISO-8601 timestamp, got ${JSON.stringify(value)}`,
+    );
+  }
 }
 
 export class SqliteIndex {
@@ -150,6 +164,7 @@ export class SqliteIndex {
       params.author = filter.author;
     }
     if (filter.createdAfter !== undefined) {
+      assertZOnlyCutoff(filter.createdAfter);
       clauses.push("created > @createdAfter");
       params.createdAfter = filter.createdAfter;
     }

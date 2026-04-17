@@ -245,3 +245,100 @@ describe("SqliteIndex", () => {
     expect(rows).toHaveLength(1);
   });
 });
+
+// Issue #56: exercise the actual sort site (SQL ORDER BY created DESC) with
+// timestamps that previously would have broken lexicographic ordering. Now
+// that the schema is Z-only, the order returned matches real time.
+describe("SqliteIndex — chronological ordering (#56)", () => {
+  let tmp: string;
+  let index: SqliteIndex;
+
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), "quorum-store-idx-sort-"));
+    index = new SqliteIndex(join(tmp, "index.db"));
+  });
+
+  afterEach(() => {
+    index.close();
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
+  const base = {
+    project: "p",
+    goal: "g",
+    approach: "a",
+    files_touched: [],
+    assumptions: [],
+    confidence: 0.5,
+    blast_radius: "small" as const,
+    estimated_tokens: 0,
+    risk_flags: [],
+    status: "approved" as const,
+  };
+
+  it("query ORDER BY created returns Z-only timestamps in real chronological order", () => {
+    // Sub-second Z values — with the pre-#56 schema allowing offsets, any
+    // `+HH:MM` offset in this range would have re-ordered these wrongly.
+    const earliest = createPlan({
+      ...base,
+      id: "pln_t1",
+      author: "claude",
+      created: "2026-04-16T09:00:00.000Z",
+    });
+    const middle = createPlan({
+      ...base,
+      id: "pln_t2",
+      author: "claude",
+      created: "2026-04-16T09:30:00.000Z",
+    });
+    const latest = createPlan({
+      ...base,
+      id: "pln_t3",
+      author: "claude",
+      created: "2026-04-16T10:00:00.000Z",
+    });
+    // Insert out of order to force the SQL ORDER BY to do the work.
+    index.index(middle, fakeSha());
+    index.index(latest, fakeSha());
+    index.index(earliest, fakeSha());
+
+    // query() returns ORDER BY created DESC — latest first.
+    expect(index.query({ type: "Plan" }).map((a) => a.id)).toEqual([
+      "pln_t3",
+      "pln_t2",
+      "pln_t1",
+    ]);
+  });
+
+  it("query rejects a non-Z createdAfter cutoff", () => {
+    expect(() =>
+      index.query({ createdAfter: "2026-04-16T09:00:00+05:30" }),
+    ).toThrow(/Z-suffixed/);
+    expect(() =>
+      index.query({ createdAfter: "2026-04-16T09:00:00-08:00" }),
+    ).toThrow(/Z-suffixed/);
+  });
+
+  it("query accepts a Z-suffixed createdAfter cutoff", () => {
+    index.index(
+      createPlan({
+        ...base,
+        id: "pln_zf1",
+        author: "claude",
+        created: "2026-04-16T08:00:00.000Z",
+      }),
+      fakeSha(),
+    );
+    index.index(
+      createPlan({
+        ...base,
+        id: "pln_zf2",
+        author: "claude",
+        created: "2026-04-16T10:00:00.000Z",
+      }),
+      fakeSha(),
+    );
+    const rows = index.query({ createdAfter: "2026-04-16T09:00:00.000Z" });
+    expect(rows.map((a) => a.id)).toEqual(["pln_zf2"]);
+  });
+});
