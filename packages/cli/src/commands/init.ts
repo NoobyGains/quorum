@@ -1,12 +1,12 @@
 // `quorum init` — initialize the local Quorum state directory (GitHub issue #18).
 //
-// Creates `~/.quorum/<hash>/` for the current project, where `<hash>` is the
-// first 16 hex chars of sha1(cwd). Writes a `config.json` and an empty
-// `state.db` placeholder (the M1 worker for #20 replaces this with a real
-// SQLite database). The operation is idempotent — re-running against an
-// already-initialized project is a no-op.
+// Creates `~/.quorum/<hash>/` for the current project. The hash is
+// `projectHash(cwd)` from `@quorum/store`, which canonicalizes the path so
+// Windows junction / casing / separator variants resolve to the same
+// directory (issue #53). Writes a `config.json` and an empty `state.db`
+// placeholder (the M1 worker for #20 replaces this with a real SQLite
+// database). Idempotent — re-running is a no-op.
 
-import { createHash } from "node:crypto";
 import {
   closeSync,
   existsSync,
@@ -16,6 +16,8 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+
+import { storageRoot } from "@quorum/store";
 
 export const CLI_VERSION = "0.0.0" as const;
 
@@ -36,20 +38,6 @@ export function defaultInitEnv(): InitEnv {
   };
 }
 
-/**
- * Compute the project hash used to namespace `~/.quorum/<hash>/`.
- */
-export function projectHash(cwd: string): string {
-  return createHash("sha1").update(cwd).digest("hex").slice(0, 16);
-}
-
-/**
- * Resolve the absolute directory for the given project cwd.
- */
-export function projectStateDir(homeDir: string, cwd: string): string {
-  return join(homeDir, ".quorum", projectHash(cwd));
-}
-
 export interface InitResult {
   /** Absolute path of the created (or existing) per-project state dir. */
   stateDir: string;
@@ -68,7 +56,7 @@ export interface ProjectConfig {
  * about what happened so the caller can print an appropriate message.
  */
 export function initProject(env: InitEnv): InitResult {
-  const stateDir = projectStateDir(env.homeDir, env.cwd);
+  const stateDir = storageRoot(env.cwd, env.homeDir);
   const configPath = join(stateDir, "config.json");
   const dbPath = join(stateDir, "state.db");
 

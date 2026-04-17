@@ -9,10 +9,11 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
+import { projectHash, storageRoot } from "@quorum/store";
+
 import {
   initProject,
-  projectHash,
-  projectStateDir,
   runInit,
   type InitEnv,
   type ProjectConfig,
@@ -26,27 +27,6 @@ function makeEnv(overrides: Partial<InitEnv> = {}): InitEnv {
     ...overrides,
   };
 }
-
-describe("projectHash", () => {
-  it("is a stable 16-char lowercase hex digest of the cwd", () => {
-    const a = projectHash("/some/project");
-    const b = projectHash("/some/project");
-    expect(a).toBe(b);
-    expect(a).toHaveLength(16);
-    expect(a).toMatch(/^[0-9a-f]{16}$/);
-  });
-
-  it("produces different hashes for different cwds", () => {
-    expect(projectHash("/a")).not.toBe(projectHash("/b"));
-  });
-});
-
-describe("projectStateDir", () => {
-  it("joins homeDir + .quorum + hash", () => {
-    const dir = projectStateDir("/home/me", "/proj");
-    expect(dir).toBe(join("/home/me", ".quorum", projectHash("/proj")));
-  });
-});
 
 describe("initProject (filesystem side-effects)", () => {
   let tmpHome: string;
@@ -68,7 +48,7 @@ describe("initProject (filesystem side-effects)", () => {
     const result = initProject(env);
 
     expect(result.alreadyInitialized).toBe(false);
-    expect(result.stateDir).toBe(projectStateDir(tmpHome, "/project/one"));
+    expect(result.stateDir).toBe(storageRoot("/project/one", tmpHome));
 
     const configRaw = readFileSync(join(result.stateDir, "config.json"), "utf8");
     const config = JSON.parse(configRaw) as ProjectConfig;
