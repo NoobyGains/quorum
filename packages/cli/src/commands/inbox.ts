@@ -21,6 +21,8 @@ import { dirname, join } from "node:path";
 import type { Artifact } from "@quorum/artifacts";
 import { Store, storageRoot } from "@quorum/store";
 
+import { validateAgentName } from "../agent-name.js";
+
 export interface InboxEnv {
   /** Working directory of the project whose state we query. */
   cwd: string;
@@ -55,9 +57,16 @@ export interface InboxOptions {
 /**
  * Resolve the agent name following the fallback chain:
  *   explicit flag -> QUORUM_AGENT env var -> "claude".
+ *
+ * Throws if the resolved value fails `validateAgentName`. Agents are used
+ * as filename segments in the inbox watermark (issue #60), so a caller-
+ * supplied string like `"../x"` would otherwise traverse out of the state
+ * dir.
  */
 export function resolveAgent(env: InboxEnv, opts: InboxOptions): string {
-  return opts.agent ?? env.getEnv("QUORUM_AGENT") ?? "claude";
+  const name = opts.agent ?? env.getEnv("QUORUM_AGENT") ?? "claude";
+  validateAgentName(name);
+  return name;
 }
 
 /**

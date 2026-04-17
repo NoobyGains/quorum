@@ -405,6 +405,33 @@ describe("collectInbox", () => {
     const r2 = await collectInbox(store, env2, {});
     expect(r2.agent).toBe("claude");
   });
+
+  // Regression #60: an agent name like "../../../x" used to flow straight
+  // into the inbox filename, traversing out of the state dir. Now rejected
+  // at the resolveAgent boundary.
+  it.each([
+    "../../../etc/passwd",
+    ".hidden",
+    "a/b",
+    "a\\b",
+    "",
+    "Claude",
+  ])("rejects malformed --agent value %j", async (bad) => {
+    const env = makeEnv({ homeDir: tmpHome });
+    await expect(collectInbox(store, env, { agent: bad })).rejects.toThrow(
+      /Invalid agent name/,
+    );
+  });
+
+  it("rejects a malformed QUORUM_AGENT env var", async () => {
+    const env = makeEnv({
+      homeDir: tmpHome,
+      getEnv: (k) => (k === "QUORUM_AGENT" ? "../x" : undefined),
+    });
+    await expect(collectInbox(store, env, {})).rejects.toThrow(
+      /Invalid agent name/,
+    );
+  });
 });
 
 describe("runInbox", () => {
