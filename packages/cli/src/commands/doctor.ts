@@ -54,9 +54,12 @@ export interface DoctorEnv {
 
 const defaultRun: CommandRunner = (cmd, args, options) =>
   new Promise((resolve, reject) => {
+    // Windows PATH entries for tools installed via npm (pnpm, etc.) are
+    // .cmd shims with no .exe sibling. Node's spawn without a shell only
+    // resolves .exe on Windows, so those binaries look "missing" otherwise.
     const child = spawn(cmd, args, {
       stdio: ["ignore", "pipe", "pipe"],
-      shell: false,
+      shell: process.platform === "win32",
       ...options,
     });
     let stdout = "";
