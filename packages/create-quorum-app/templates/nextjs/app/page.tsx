@@ -1,9 +1,11 @@
+// Server component. The /api/hello route handler is imported and called
+// directly — no HTTP hop, no reliance on a particular port or host. The
+// route is still a real endpoint for browser clients, but the starter
+// page renders without needing the server to talk to itself.
+import { GET } from "./api/hello/route";
+
 async function getGreeting(): Promise<{ message: string; shipped_at: string }> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
-  const res = await fetch(`${base}/api/hello`, { cache: "no-store" });
-  if (!res.ok) {
-    return { message: "(api unreachable)", shipped_at: new Date().toISOString() };
-  }
+  const res = GET();
   return res.json();
 }
 

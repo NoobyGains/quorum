@@ -6,9 +6,12 @@ A Next.js app scaffolded by [`create-quorum-app`](https://github.com/NoobyGains/
 
 ```bash
 pnpm install
-quorum install     # wires the Quorum MCP into both agents (one time)
 pnpm dev           # http://localhost:3000
 ```
+
+### Optional: wire up Quorum for cross-vendor review
+
+If you have `@quorum/cli` installed globally, run `quorum install` once to wire the MCP into Claude and Codex for this project. Without it, the agents still work in chat mode — you just won't get the typed-artifact audit trail.
 
 Then ask either agent: _"add a feature that ..."_. What you'll see:
 

@@ -177,8 +177,8 @@ describe("scaffold — nested directory preservation", () => {
   });
 });
 
-describe("scaffold — substitution only applies to package.json", () => {
-  it("does not substitute __APP_NAME__ in non-package.json files", async () => {
+describe("scaffold — substitution scope", () => {
+  it("does not substitute __APP_NAME__ in unrelated files (src/index.ts, text)", async () => {
     await scaffold({
       targetDir,
       appName: "my-app",
@@ -191,6 +191,43 @@ describe("scaffold — substitution only applies to package.json", () => {
       "utf8",
     );
     expect(hello).toBe("hello");
+  });
+
+  it("substitutes __APP_NAME__ in README.md as well as package.json", async () => {
+    writeFileSync(
+      join(templateDir, "README.md"),
+      `# __APP_NAME__\n\nA project called __APP_NAME__.`,
+    );
+    await scaffold({
+      targetDir,
+      appName: "my-app",
+      templateDir,
+    });
+    const readme = readFileSync(join(targetDir, "README.md"), "utf8");
+    expect(readme).toBe(`# my-app\n\nA project called my-app.`);
+    expect(readme).not.toContain("__APP_NAME__");
+  });
+});
+
+describe("scaffold — symlink policy", () => {
+  it("throws a clear error when a template contains a symbolic link", async () => {
+    // Create a symlink inside the template. On Windows without admin this
+    // can fail at symlinkSync — skip the test in that case rather than
+    // green-light a path we can't exercise.
+    const { symlinkSync } = await import("node:fs");
+    const target = join(templateDir, "real.txt");
+    writeFileSync(target, "contents");
+    const link = join(templateDir, "link.txt");
+    try {
+      symlinkSync(target, link);
+    } catch {
+      // Windows without admin privs — skip.
+      return;
+    }
+
+    await expect(
+      scaffold({ targetDir, appName: "my-app", templateDir }),
+    ).rejects.toThrow(/symbolic links in templates are not supported/);
   });
 });
 

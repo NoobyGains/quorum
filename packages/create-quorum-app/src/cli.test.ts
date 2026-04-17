@@ -126,9 +126,23 @@ describe("runCli — happy path", () => {
     expect(joinedOut).toContain("Next steps:");
     expect(joinedOut).toContain("cd ");
     expect(joinedOut).toContain("pnpm install");
-    expect(joinedOut).toContain("quorum install");
     expect(joinedOut).toContain("pnpm dev");
+    // `quorum install` is mentioned as optional, not a required step.
+    expect(joinedOut).toContain("optional");
   });
+});
+
+describe("runCli — Windows reserved device name rejection", () => {
+  for (const reserved of ["con", "prn", "nul", "aux", "com1", "com9", "lpt1", "lpt9"]) {
+    it(`rejects reserved name "${reserved}"`, async () => {
+      const capture: Capture = { outs: [], errs: [] };
+      const code = await runCli(
+        makeOpts([reserved], async () => 0, capture),
+      );
+      expect(code).toBe(2);
+      expect(capture.errs.join("\n")).toContain("reserved on Windows");
+    });
+  }
 });
 
 describe("runCli — git-init failure is non-fatal", () => {

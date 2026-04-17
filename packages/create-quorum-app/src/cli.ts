@@ -9,6 +9,15 @@ import type { CliOptions, ExitCode } from "./types.js";
 
 const APP_NAME_PATTERN = /^[a-z0-9][a-z0-9-_]{0,63}$/;
 
+// Reserved on Windows regardless of extension. Directory creation with any
+// of these names fails or produces an unusable path. Keep lowercased —
+// callers match against a lowercased appName.
+const WINDOWS_RESERVED_NAMES = new Set([
+  "con", "prn", "aux", "nul",
+  "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
+  "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
+]);
+
 const defaultRun = (
   cmd: string,
   args: readonly string[],
@@ -46,6 +55,12 @@ export async function runCli(opts: CliOptions): Promise<ExitCode> {
     );
     return 2;
   }
+  if (WINDOWS_RESERVED_NAMES.has(appName)) {
+    stderr(
+      `invalid app name: ${appName}. reserved on Windows — pick another name`,
+    );
+    return 2;
+  }
 
   const targetDir = resolve(cwd, appName);
   const templateDir = join(templatesDir, "nextjs");
@@ -79,8 +94,11 @@ export async function runCli(opts: CliOptions): Promise<ExitCode> {
   stdout("Next steps:");
   stdout(`  cd ${appName}`);
   stdout("  pnpm install");
-  stdout("  quorum install");
   stdout("  pnpm dev");
+  stdout("");
+  stdout(
+    "Quorum CLI setup (optional, if you've installed @quorum/cli): quorum install",
+  );
 
   return 0;
 }

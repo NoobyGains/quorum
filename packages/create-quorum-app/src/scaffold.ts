@@ -10,6 +10,11 @@ import type { ScaffoldOptions, ScaffoldResult } from "./types.js";
 
 const PLACEHOLDER = "__APP_NAME__";
 
+// Files where `__APP_NAME__` should be substituted with the chosen appName.
+// Everything else is copied byte-for-byte. Substituting only human-facing
+// identity files keeps the rule predictable.
+const SUBSTITUTED_FILES = new Set(["package.json", "README.md"]);
+
 export async function scaffold(opts: ScaffoldOptions): Promise<ScaffoldResult> {
   validateAppName(opts.appName);
 
@@ -84,7 +89,12 @@ async function copyTree(
     const entryRel = rel === "" ? entry.name : join(rel, entry.name);
 
     if (entry.isSymbolicLink()) {
-      continue;
+      // Explicit refusal rather than silent skip: a template with a symlink
+      // is either a mistake or a deliberate choice that needs its own design
+      // pass. Surface it loudly.
+      throw new Error(
+        `symbolic links in templates are not supported: ${srcPath}`,
+      );
     }
 
     if (entry.isDirectory()) {
@@ -97,7 +107,7 @@ async function copyTree(
       continue;
     }
 
-    if (entry.name === "package.json") {
+    if (SUBSTITUTED_FILES.has(entry.name)) {
       const content = await readFile(srcPath, "utf8");
       const substituted = content.split(PLACEHOLDER).join(appName);
       await writeFile(dstPath, substituted, "utf8");
