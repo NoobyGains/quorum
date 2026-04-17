@@ -15,6 +15,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+import { createClaim, createPlan } from "@quorum/artifacts";
 import { Store } from "@quorum/store";
 
 import { createServer } from "../server.js";
@@ -153,6 +154,7 @@ const FIXTURES: Record<string, ToolFixture> = {
     valid: {
       ...BASE,
       target_commit: "abcdef1234567",
+      target_plan: "pln_seeded",
       reviewer: "codex",
       verdict: "approve",
       notes: [],
@@ -210,6 +212,27 @@ describe("create tools", () => {
     // factory) and our direct verification reads. Construct one shared
     // instance and return it from the factory; dispose at teardown.
     store = new Store(cwd, { homeDir: tmpHome });
+
+    // Seed a Plan that the review.create fixture references. This is the
+    // target_plan every review in the generic loop and the positive-path
+    // tests below will point at. Rejection paths use a different id.
+    await store.write(
+      createPlan({
+        id: "pln_seeded",
+        author: "claude",
+        project: "quorum-test",
+        goal: "seeded plan for review tests",
+        approach: "n/a",
+        files_touched: [],
+        assumptions: [],
+        confidence: 0.5,
+        blast_radius: "small",
+        estimated_tokens: 0,
+        risk_flags: [],
+        status: "objection_window",
+      }),
+    );
+
     const connected = await connectClient(() => store);
     client = connected.client;
     disconnect = connected.close;
@@ -277,5 +300,57 @@ describe("create tools", () => {
       arguments: {},
     });
     expect(res.isError).toBe(true);
+  });
+
+  // Regression #54: review.create used to fabricate target_plan to satisfy
+  // the ReviewSchema when the caller omitted it. It must instead reject.
+  describe("review.create target_plan validation", () => {
+    const reviewArgs = {
+      ...BASE,
+      target_commit: "abcdef1234567",
+      reviewer: "codex",
+      verdict: "approve",
+      notes: [],
+    };
+
+    it("rejects when target_plan is omitted", async () => {
+      const res = await client.callTool({
+        name: "review.create",
+        arguments: reviewArgs,
+      });
+      expect(res.isError).toBe(true);
+    });
+
+    it("rejects when target_plan does not resolve to an existing artifact", async () => {
+      const res = await client.callTool({
+        name: "review.create",
+        arguments: { ...reviewArgs, target_plan: "pln_doesnotexist" },
+      });
+      expect(res.isError).toBe(true);
+      const text = (res.content as { text: string }[])[0].text;
+      expect(text).toMatch(/target_plan/i);
+    });
+
+    it("rejects when target_plan points to a non-Plan artifact", async () => {
+      await store.write(
+        createClaim({
+          id: "clm_notaplan",
+          author: "claude",
+          project: "quorum-test",
+          target: "issue:#999",
+          agent: "claude",
+          exclusive: true,
+          ttl_seconds: 60,
+          reason: "test",
+        }),
+      );
+      const res = await client.callTool({
+        name: "review.create",
+        arguments: { ...reviewArgs, target_plan: "clm_notaplan" },
+      });
+      expect(res.isError).toBe(true);
+      const text = (res.content as { text: string }[])[0].text;
+      expect(text).toMatch(/Plan/);
+    });
   });
 });

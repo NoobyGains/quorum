@@ -29,7 +29,7 @@ import {
 } from "@quorum/artifacts";
 
 import { generateId } from "./ids.js";
-import { type ToolDef, textResult } from "./types.js";
+import { type ToolContext, type ToolDef, errorResult, textResult } from "./types.js";
 
 // --- Shared fragments --------------------------------------------------------
 
@@ -215,7 +215,11 @@ const ReviewCreate = z
     target_commit: z
       .string()
       .regex(/^[0-9a-f]{7,40}$/, "target_commit must be a git sha"),
-    target_plan: ArtifactId.optional(),
+    // #54: target_plan is required — reviews that aren't bound to a Plan
+    // are meaningless for the plan-linked query surfaces the rest of the
+    // system depends on. The handler additionally verifies the id resolves
+    // to a real Plan at validate-time.
+    target_plan: ArtifactId,
     reviewer: z.string().min(1),
     verdict: ReviewVerdict,
     notes: z.array(ReviewNote),
@@ -506,6 +510,7 @@ const ReviewJsonSchema = {
   additionalProperties: false,
   required: [
     "target_commit",
+    "target_plan",
     "reviewer",
     "verdict",
     "notes",
@@ -717,11 +722,7 @@ const buildReview: Builder<z.infer<typeof ReviewCreate>> = (id, args) =>
     author: args.author,
     project: args.project,
     target_commit: args.target_commit,
-    // The Review schema requires `target_plan` (non-nullable). If the caller
-    // doesn't bind the review to a Plan, we fall back to the artifact's own
-    // id — the field is still a valid ArtifactId and the review is self-
-    // referential, which is enough to satisfy the schema at this layer.
-    target_plan: args.target_plan ?? id,
+    target_plan: args.target_plan,
     reviewer: args.reviewer,
     verdict: args.verdict,
     notes: args.notes,
@@ -749,6 +750,16 @@ interface CreateSpec<S extends z.ZodType<{ author: string }>> {
   schema: S;
   jsonSchema: Record<string, unknown>;
   build: Builder<z.infer<S>>;
+  /**
+   * Optional cross-artifact validation that runs after schema parse and
+   * before `build`, with access to the store. Return a non-null string to
+   * reject the call with that error message. Used for cases like
+   * review.create where `target_plan` must reference an existing Plan.
+   */
+  validate?: (
+    args: z.infer<S>,
+    ctx: ToolContext,
+  ) => Promise<string | null>;
 }
 
 // Minimum shape that every create-tool schema must infer to: `author` is
@@ -771,6 +782,12 @@ function specToToolDef<S extends z.ZodType<CreateArgsBase>>(
     inputSchema: spec.schema,
     jsonSchema: spec.jsonSchema,
     handler: async (args, ctx) => {
+      if (spec.validate) {
+        const err = await spec.validate(args, ctx);
+        if (err !== null) {
+          return errorResult(`${spec.name}: ${err}`);
+        }
+      }
       const id = generateId(spec.type, args.author);
       let artifact: Artifact;
       try {
@@ -899,6 +916,16 @@ export const CREATE_TOOLS: ToolDef[] = [
     schema: ReviewCreate,
     jsonSchema: ReviewJsonSchema,
     build: buildReview,
+    validate: async (args, ctx) => {
+      const plan = await ctx.store.read(args.target_plan);
+      if (!plan) {
+        return `target_plan "${args.target_plan}" does not exist`;
+      }
+      if (plan.type !== "Plan") {
+        return `target_plan "${args.target_plan}" is a ${plan.type}, not a Plan`;
+      }
+      return null;
+    },
   }),
   specToToolDef({
     name: "risk_flag.create",
