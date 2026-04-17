@@ -30,6 +30,7 @@ Replace chat with a **typed, git-backed artifact store** and **protocol-enforced
 
 ## Quick links
 
+- 🔌 [**Self-bootstrap** — run Quorum on your machine](docs/self-bootstrap.md)
 - 📖 [Design (7-layer architecture)](docs/design.md)
 - 📦 [Artifact types (the 12)](docs/artifacts.md)
 - 🤝 [Protocols](docs/protocols.md)
