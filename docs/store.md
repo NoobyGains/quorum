@@ -87,3 +87,13 @@ new Store(cwd, { homeDir?: string })
 
 `homeDir` overrides `os.homedir()` — useful for tests and alternative
 install roots. No other knobs; the index-failure contract is hard-wired.
+
+---
+
+## Migration note (pre-alpha)
+
+Before issue #57, `quorum init` created a zero-byte placeholder named
+`state.db` while the store opened `index.db`. Existing pre-alpha installs
+with a `state.db` in their state dir should delete that file — the store
+now creates and uses `INDEX_DB_FILENAME` (`index.db`) exclusively. A clean
+`quorum init` against a fresh directory has no such leftover.

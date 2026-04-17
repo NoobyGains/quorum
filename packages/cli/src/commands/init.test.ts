@@ -10,7 +10,8 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { projectHash, storageRoot } from "@quorum/store";
+import { createPlan } from "@quorum/artifacts";
+import { INDEX_DB_FILENAME, Store, projectHash, storageRoot } from "@quorum/store";
 
 import {
   initProject,
@@ -39,7 +40,7 @@ describe("initProject (filesystem side-effects)", () => {
     rmSync(tmpHome, { recursive: true, force: true });
   });
 
-  it("creates the state dir, config.json and empty state.db on first run", () => {
+  it("creates the state dir, config.json and empty index.db on first run", () => {
     const env = makeEnv({
       cwd: "/project/one",
       homeDir: tmpHome,
@@ -56,7 +57,7 @@ describe("initProject (filesystem side-effects)", () => {
     expect(config.created_at).toBe("2026-04-16T12:00:00.000Z");
     expect(config.version).toBe("0.0.0");
 
-    const dbStat = statSync(join(result.stateDir, "state.db"));
+    const dbStat = statSync(join(result.stateDir, "index.db"));
     expect(dbStat.size).toBe(0);
   });
 
@@ -94,10 +95,10 @@ describe("initProject (filesystem side-effects)", () => {
     expect(a.stateDir).not.toBe(b.stateDir);
   });
 
-  it("repairs a partial init where state.db was deleted", () => {
-    // Simulates an interrupted first run (or manual deletion of state.db)
-    // where config.json exists but state.db does not. The fix must NOT
-    // short-circuit — it must recreate state.db.
+  it("repairs a partial init where index.db was deleted", () => {
+    // Simulates an interrupted first run (or manual deletion of index.db)
+    // where config.json exists but index.db does not. The fix must NOT
+    // short-circuit — it must recreate index.db.
     const env = makeEnv({
       cwd: "/project/partial",
       homeDir: tmpHome,
@@ -106,14 +107,14 @@ describe("initProject (filesystem side-effects)", () => {
     const first = initProject(env);
     expect(first.alreadyInitialized).toBe(false);
 
-    const dbPath = join(first.stateDir, "state.db");
+    const dbPath = join(first.stateDir, "index.db");
     unlinkSync(dbPath);
     expect(existsSync(dbPath)).toBe(false);
 
     const second = initProject(env);
     // Not a no-op — we had to repair.
     expect(second.alreadyInitialized).toBe(false);
-    // state.db must exist again as a zero-byte placeholder.
+    // index.db must exist again as a zero-byte placeholder.
     expect(existsSync(dbPath)).toBe(true);
     expect(statSync(dbPath).size).toBe(0);
     // config.json must be untouched (preserves original created_at).
@@ -155,5 +156,42 @@ describe("runInit", () => {
     expect(logs).toEqual([
       "Quorum is already initialized for /runinit/existing",
     ]);
+  });
+
+  // Regression #57: init used to create `state.db` while the store opened
+  // `index.db`, so a fresh-init project couldn't round-trip a single
+  // artifact. This covers the end-to-end path in one test.
+  it("init + Store round-trip: write then list works without manual setup", async () => {
+    const cwd = join(tmpHome, "fresh-project");
+    const env = makeEnv({ cwd, homeDir: tmpHome });
+    const code = await runInit({ env, log: () => {} });
+    expect(code).toBe(0);
+
+    const stateDir = storageRoot(cwd, tmpHome);
+    expect(existsSync(join(stateDir, INDEX_DB_FILENAME))).toBe(true);
+
+    const store = new Store(cwd, { homeDir: tmpHome });
+    try {
+      await store.write(
+        createPlan({
+          id: "pln_rt",
+          author: "claude",
+          project: "fresh",
+          goal: "round-trip",
+          approach: "n/a",
+          files_touched: [],
+          assumptions: [],
+          confidence: 0.5,
+          blast_radius: "small",
+          estimated_tokens: 0,
+          risk_flags: [],
+          status: "objection_window",
+        }),
+      );
+      const all = await store.list();
+      expect(all.map((a) => a.id)).toEqual(["pln_rt"]);
+    } finally {
+      await store.close();
+    }
   });
 });

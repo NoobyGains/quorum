@@ -3,9 +3,10 @@
 // Creates `~/.quorum/<hash>/` for the current project. The hash is
 // `projectHash(cwd)` from `@quorum/store`, which canonicalizes the path so
 // Windows junction / casing / separator variants resolve to the same
-// directory (issue #53). Writes a `config.json` and an empty `state.db`
-// placeholder (the M1 worker for #20 replaces this with a real SQLite
-// database). Idempotent — re-running is a no-op.
+// directory (issue #53). Writes a `config.json` and a zero-byte
+// `INDEX_DB_FILENAME` placeholder that the store's `SqliteIndex` opens and
+// initializes on first use (issue #57 — this file used to be named
+// `state.db`, which the store never read). Idempotent.
 
 import {
   closeSync,
@@ -17,7 +18,7 @@ import {
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import { storageRoot } from "@quorum/store";
+import { INDEX_DB_FILENAME, storageRoot } from "@quorum/store";
 
 export const CLI_VERSION = "0.0.0" as const;
 
@@ -58,14 +59,14 @@ export interface ProjectConfig {
 export function initProject(env: InitEnv): InitResult {
   const stateDir = storageRoot(env.cwd, env.homeDir);
   const configPath = join(stateDir, "config.json");
-  const dbPath = join(stateDir, "state.db");
+  const dbPath = join(stateDir, INDEX_DB_FILENAME);
 
   const configExists = existsSync(configPath);
   const dbExists = existsSync(dbPath);
 
   // Only report already-initialized when BOTH markers are present. A missing
-  // state.db with an existing config.json means a previous run was
-  // interrupted (or state.db was manually deleted); repair instead of
+  // index.db with an existing config.json means a previous run was
+  // interrupted (or the file was manually deleted); repair instead of
   // silently succeeding.
   if (configExists && dbExists) {
     return { stateDir, alreadyInitialized: true };
@@ -82,9 +83,10 @@ export function initProject(env: InitEnv): InitResult {
     writeFileSync(configPath, JSON.stringify(config, null, 2) + "\n", "utf8");
   }
 
-  // Zero-byte placeholder — M1 worker for #20 replaces this with a real
-  // SQLite database. Use `openSync`/`closeSync` so we don't accidentally
-  // write a byte or trailing newline.
+  // Zero-byte placeholder at the filename the store opens. `SqliteIndex`'s
+  // constructor will treat an empty file as a fresh database and run the
+  // schema DDL on first open. `openSync`/`closeSync` avoids writing even a
+  // trailing newline.
   if (!dbExists) {
     const fd = openSync(dbPath, "w");
     closeSync(fd);

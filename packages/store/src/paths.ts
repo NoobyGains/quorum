@@ -58,17 +58,23 @@ export function storageRoot(cwd: string, homeDirOverride?: string): string {
   return join(home, ".quorum", projectHash(cwd));
 }
 
-/**
- * Path of the bare git repository that holds artifact blobs.
- * `<storageRoot>/store.git`.
- */
-export function gitRepoPath(storageRootDir: string): string {
-  return join(storageRootDir, "store.git");
-}
+/** Filename of the bare git repo inside a state dir. */
+export const GIT_REPO_DIRNAME = "store.git" as const;
 
 /**
- * Path of the SQLite index file. `<storageRoot>/index.db`.
+ * Filename of the SQLite index file inside a state dir. Exported so that
+ * `@quorum/cli` (and any future watchdog) can reference the same name the
+ * store opens (issue #57 — init used to create a `state.db` placeholder
+ * that the store's `index.db` never saw).
  */
+export const INDEX_DB_FILENAME = "index.db" as const;
+
+/** Path of the bare git repository that holds artifact blobs. */
+export function gitRepoPath(storageRootDir: string): string {
+  return join(storageRootDir, GIT_REPO_DIRNAME);
+}
+
+/** Path of the SQLite index file. */
 export function sqlitePath(storageRootDir: string): string {
-  return join(storageRootDir, "index.db");
+  return join(storageRootDir, INDEX_DB_FILENAME);
 }
