@@ -209,3 +209,45 @@ describe("ArtifactSchema (discriminated union)", () => {
     }
   });
 });
+
+// Issue #56: non-Z timestamps broke lexicographic sort in sqlite-index and
+// the handoff / presence comparisons. Fix: schema rejects any offset other
+// than Z so the lexicographic shortcut remains chronologically correct.
+describe("ArtifactSchema — Z-only datetime enforcement (#56)", () => {
+  it("rejects `created` with a non-Z offset", () => {
+    const bad = { ...(fixtures.Plan as object), created: "2026-04-16T14:32:18+05:30" };
+    expect(ArtifactSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects Commitment `by_when` with a non-Z offset", () => {
+    const bad = { ...(fixtures.Commitment as object), by_when: "2026-04-16T18:00:00-08:00" };
+    expect(ArtifactSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects Decision `expires` with a non-Z offset", () => {
+    const bad = { ...(fixtures.Decision as object), expires: "2026-04-16T18:00:00+01:00" };
+    expect(ArtifactSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects Disagreement `at` with a non-Z offset when rounds are present", () => {
+    const bad = {
+      ...(fixtures.Disagreement as object),
+      rounds: [{ at: "2026-04-16T14:32:18+05:30", agent: "claude", reply: "x" }],
+    };
+    expect(ArtifactSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("still accepts Z-suffixed timestamps", () => {
+    const ok = { ...(fixtures.Plan as object), created: "2026-04-16T14:32:18.000Z" };
+    expect(ArtifactSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("proves lexicographic sort is chronological once Z is enforced", () => {
+    // After the fix, every accepted timestamp ends in Z, so byte-wise
+    // comparison equals chronological comparison. Sanity-check that here.
+    const earlier = "2026-04-16T09:00:00.000Z";
+    const later = "2026-04-16T10:00:00.000Z";
+    expect(earlier < later).toBe(true);
+    expect(new Date(earlier) < new Date(later)).toBe(true);
+  });
+});

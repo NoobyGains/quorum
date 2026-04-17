@@ -13,7 +13,7 @@ export const DecisionSchema = BaseArtifactSchema.extend({
   rationale: z.string().min(1),
   signed_by: z.array(z.string().min(1)).min(1),
   // `expires` is either an ISO-8601 timestamp or null (no expiry).
-  expires: z.string().datetime({ offset: true }).nullable(),
+  expires: z.string().datetime().nullable(),
 });
 
 export type Decision = z.infer<typeof DecisionSchema>;

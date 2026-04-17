@@ -19,7 +19,7 @@ import {
 export const DisagreementRoundSchema = z.object({
   agent: z.string().min(1),
   reply: z.string().min(1),
-  at: z.string().datetime({ offset: true }),
+  at: z.string().datetime(),
 });
 
 export type DisagreementRound = z.infer<typeof DisagreementRoundSchema>;

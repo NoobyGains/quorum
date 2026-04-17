@@ -35,7 +35,10 @@ export const BaseArtifactSchema = z.object({
   id: ArtifactIdSchema,
   type: z.string(),
   author: z.string().min(1),
-  created: z.string().datetime({ offset: true }),
+  // Z-only by design (issue #56): producers emit `new Date().toISOString()`
+  // and many sort/compare sites assume lexicographic order == chronological.
+  // That assumption only holds when every timestamp ends in `Z`.
+  created: z.string().datetime(),
   project: z.string().min(1),
   version: z.number().int().nonnegative(),
   supersedes: ArtifactIdSchema.nullable(),

@@ -11,7 +11,7 @@ import {
 export const CommitmentSchema = BaseArtifactSchema.extend({
   type: z.literal("Commitment"),
   what: z.string().min(1),
-  by_when: z.string().datetime({ offset: true }),
+  by_when: z.string().datetime(),
   to_whom: z.array(z.string().min(1)).min(1),
   status: CommitmentStatusSchema,
 });
