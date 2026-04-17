@@ -5,9 +5,11 @@
 // Write flow:
 //   1. ArtifactSchema.safeParse — reject invalid artifacts at the boundary
 //   2. git.write — source of truth; blob + commit + ref
-//   3. sqlite.index — derivable query layer. Failures here are *logged*,
-//      not thrown, because the index can always be rebuilt from git (see
-//      issue #20's "sqlite is a cache" note).
+//   3. sqlite.index — derivable query layer. Must succeed; if it throws, the
+//      whole write throws so the caller sees the failure synchronously (issue
+//      #52). Retries are safe: git.write is idempotent on id and sqlite.index
+//      is a DELETE+INSERT in a single transaction. For catastrophic index
+//      loss, see `rebuildIndex`.
 
 import { mkdirSync } from "node:fs";
 
@@ -24,32 +26,25 @@ export interface StoreOptions {
    * `os.homedir()`.
    */
   homeDir?: string;
-  /**
-   * Sink for non-fatal warnings (currently: sqlite-index failures during
-   * write). Defaults to `console.warn`.
-   */
-  warn?: (msg: string) => void;
 }
 
 export class Store {
   private readonly git: GitRefsStore;
   private readonly sqlite: SqliteIndex;
-  private readonly warn: (msg: string) => void;
 
   constructor(cwd: string, opts: StoreOptions = {}) {
     const root = storageRoot(cwd, opts.homeDir);
     mkdirSync(root, { recursive: true });
     this.git = new GitRefsStore(root);
     this.sqlite = new SqliteIndex(sqlitePath(root));
-
-    this.warn = opts.warn ?? ((msg: string) => console.warn(msg));
   }
 
   /**
-   * Validate, persist to git, then index in sqlite. Throws if the artifact
-   * fails schema validation or if the git write fails. A sqlite failure is
-   * logged but does not roll back the git write — git is the source of
-   * truth; the index can be rebuilt.
+   * Validate, persist to git, then index in sqlite. Throws on schema
+   * validation failure, git write failure, or sqlite index failure. The
+   * caller can retry safely: git.write is idempotent (same id → same ref)
+   * and sqlite.index is a single transaction that overwrites any existing
+   * row.
    */
   async write(a: Artifact): Promise<void> {
     const parsed = ArtifactSchema.safeParse(a);
@@ -62,12 +57,7 @@ export class Store {
     }
     const artifact = parsed.data;
     const { sha } = await this.git.write(artifact);
-    try {
-      this.sqlite.index(artifact, sha);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.warn(`sqlite index failed for ${artifact.id}: ${msg}`);
-    }
+    this.sqlite.index(artifact, sha);
   }
 
   /**
@@ -103,7 +93,8 @@ export class Store {
 
   /**
    * Write a superseding artifact. Delegates the invariant check to
-   * `GitRefsStore.supersede`, then re-indexes.
+   * `GitRefsStore.supersede`, then re-indexes. Index failure throws (see
+   * `write`).
    */
   async supersede(oldId: string, next: Artifact): Promise<void> {
     const parsed = ArtifactSchema.safeParse(next);
@@ -116,12 +107,21 @@ export class Store {
     }
     const artifact = parsed.data;
     const { sha } = await this.git.supersede(oldId, artifact);
-    try {
+    this.sqlite.index(artifact, sha);
+  }
+
+  /**
+   * Walk every ref in git and re-index into sqlite. Intended for catastrophic
+   * recovery — e.g., the index file was deleted or corrupted. Rows already
+   * in sqlite are overwritten by the DELETE+INSERT in `SqliteIndex.index`.
+   * Returns the number of artifacts re-indexed.
+   */
+  async rebuildIndex(): Promise<number> {
+    const entries = await this.git.listAllWithSha();
+    for (const { artifact, sha } of entries) {
       this.sqlite.index(artifact, sha);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.warn(`sqlite index failed for ${artifact.id}: ${msg}`);
     }
+    return entries.length;
   }
 
   async close(): Promise<void> {

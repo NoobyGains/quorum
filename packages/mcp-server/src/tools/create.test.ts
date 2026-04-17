@@ -209,7 +209,7 @@ describe("create tools", () => {
     // We need the same Store backing both the server handlers (via the
     // factory) and our direct verification reads. Construct one shared
     // instance and return it from the factory; dispose at teardown.
-    store = new Store(cwd, { homeDir: tmpHome, warn: () => {} });
+    store = new Store(cwd, { homeDir: tmpHome });
     const connected = await connectClient(() => store);
     client = connected.client;
     disconnect = connected.close;

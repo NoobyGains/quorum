@@ -298,6 +298,30 @@ export class GitRefsStore {
   }
 
   /**
+   * Walk every artifact ref and yield `{ artifact, sha }` pairs. Used by
+   * `Store.rebuildIndex` to reconstitute the sqlite cache from git.
+   */
+  async listAllWithSha(): Promise<Array<{ artifact: Artifact; sha: string }>> {
+    await this.ensureInit();
+    const results: Array<{ artifact: Artifact; sha: string }> = [];
+    for (const prefix of ALL_REF_PREFIXES) {
+      const raw = await this.git
+        .raw(["for-each-ref", "--format=%(objectname) %(refname)", prefix])
+        .catch(() => "");
+      const lines = raw.split("\n").filter((l) => l.trim() !== "");
+      for (const line of lines) {
+        const idx = line.indexOf(" ");
+        if (idx === -1) continue;
+        const sha = line.slice(0, idx);
+        const artifact = await this.readBlobFromCommit(sha);
+        if (!artifact) continue;
+        results.push({ artifact, sha });
+      }
+    }
+    return results;
+  }
+
+  /**
    * Write a superseding artifact. Enforces `next.supersedes === oldId` and
    * that `oldId` exists. Does NOT delete or rewrite the old ref — history
    * is append-only.

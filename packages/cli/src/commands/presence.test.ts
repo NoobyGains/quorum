@@ -103,7 +103,7 @@ describe("collectPresence", () => {
 
   beforeEach(() => {
     tmpHome = mkdtempSync(join(tmpdir(), "quorum-presence-col-"));
-    store = new Store(CWD, { homeDir: tmpHome, warn: () => {} });
+    store = new Store(CWD, { homeDir: tmpHome });
   });
 
   afterEach(async () => {
@@ -277,7 +277,7 @@ describe("runPresence", () => {
   });
 
   function factory(cwd: string, homeDir: string): Store {
-    return new Store(cwd, { homeDir, warn: () => {} });
+    return new Store(cwd, { homeDir });
   }
 
   it("returns 0 with 'nobody active' on an empty store (cold start)", async () => {
@@ -293,7 +293,7 @@ describe("runPresence", () => {
   });
 
   it("prints the expected text report with populated data", async () => {
-    const seedStore = new Store(CWD, { homeDir: tmpHome, warn: () => {} });
+    const seedStore = new Store(CWD, { homeDir: tmpHome });
     await seedStore.write(
       makePlan("pln_live", {
         author: "claude",
@@ -316,7 +316,7 @@ describe("runPresence", () => {
   });
 
   it("--json emits a parseable payload", async () => {
-    const seedStore = new Store(CWD, { homeDir: tmpHome, warn: () => {} });
+    const seedStore = new Store(CWD, { homeDir: tmpHome });
     await seedStore.write(
       makePlan("pln_j", {
         author: "claude",

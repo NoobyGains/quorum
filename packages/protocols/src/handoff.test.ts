@@ -40,7 +40,6 @@ describe("handoff protocol", () => {
     tempHome = mkdtempSync(join(tmpdir(), "quorum-protocols-handoff-"));
     store = new Store("/fake/project/protocols-handoff", {
       homeDir: tempHome,
-      warn: () => {},
     });
   });
 

@@ -147,7 +147,6 @@ describe("intent protocol", () => {
     const tempHome = mkdtempSync(join(tmpdir(), "quorum-protocols-intent-"));
     const store = new Store("/fake/project/protocols-intent", {
       homeDir: tempHome,
-      warn: () => {},
     });
 
     try {

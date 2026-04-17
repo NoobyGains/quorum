@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -32,7 +32,7 @@ describe("Store", () => {
 
   beforeEach(() => {
     tmpHome = mkdtempSync(join(tmpdir(), "quorum-store-combo-"));
-    store = new Store(cwd, { homeDir: tmpHome, warn: () => {} });
+    store = new Store(cwd, { homeDir: tmpHome });
   });
 
   afterEach(async () => {
@@ -94,7 +94,7 @@ describe("Store", () => {
 
     // Reopen store — mimics a fresh process. Both layers must already know it.
     await store.close();
-    store = new Store(cwd, { homeDir: tmpHome, warn: () => {} });
+    store = new Store(cwd, { homeDir: tmpHome });
     const reopened = await store.read("pln_cons");
     expect(reopened?.id).toBe("pln_cons");
   });
@@ -122,5 +122,73 @@ describe("Store", () => {
     );
     const [first] = await store.latestOfType("Plan", 1);
     expect(first?.id).toBe("pln_lt2");
+  });
+
+  // Regression #52: prior behavior was to warn-and-continue when the sqlite
+  // index write failed, leaving the artifact in git but invisible to
+  // list/search/latestOfType/supersededBy (which only read sqlite). Now the
+  // write must throw so the caller sees the failure.
+  it("write throws when the sqlite index fails", async () => {
+    // @ts-expect-error - reaching into a private field is fine in tests
+    vi.spyOn(store.sqlite, "index").mockImplementation(() => {
+      throw new Error("disk full");
+    });
+    await expect(store.write(makePlan("pln_idxfail"))).rejects.toThrow(
+      /disk full|sqlite index/i,
+    );
+  });
+
+  it("supersede throws when the sqlite index fails", async () => {
+    await store.write(makePlan("pln_suporig"));
+    // @ts-expect-error - reaching into a private field is fine in tests
+    vi.spyOn(store.sqlite, "index").mockImplementation(() => {
+      throw new Error("disk full");
+    });
+    const next = makePlan("pln_supnext", {
+      supersedes: "pln_suporig",
+      version: 2,
+    });
+    await expect(store.supersede("pln_suporig", next)).rejects.toThrow(
+      /disk full|sqlite index/i,
+    );
+  });
+
+  it("retrying a write after a transient index failure heals the index", async () => {
+    const plan = makePlan("pln_retry");
+    // @ts-expect-error - reaching into a private field is fine in tests
+    const spy = vi.spyOn(store.sqlite, "index");
+    spy.mockImplementationOnce(() => {
+      throw new Error("transient");
+    });
+    await expect(store.write(plan)).rejects.toThrow(/transient|sqlite index/i);
+
+    // Second attempt: spy falls through to the real impl. Git is idempotent
+    // (same id → same ref), so the retry should succeed and the artifact
+    // should show up in list/search.
+    spy.mockRestore();
+    await store.write(plan);
+
+    const all = await store.list();
+    expect(all.map((a) => a.id)).toContain("pln_retry");
+  });
+
+  it("rebuildIndex repopulates sqlite from git after index wipe", async () => {
+    await store.write(makePlan("pln_rb1", { goal: "rebuild me" }));
+    await store.write(makePlan("pln_rb2", { author: "codex" }));
+
+    // Simulate a catastrophic index loss: wipe the artifacts table.
+    // @ts-expect-error - reaching into a private field is fine in tests
+    (store.sqlite as unknown as { db: { exec: (s: string) => void } }).db.exec(
+      "DELETE FROM artifacts",
+    );
+    const afterWipe = await store.list();
+    expect(afterWipe).toHaveLength(0);
+
+    await store.rebuildIndex();
+
+    const all = await store.list();
+    expect(all.map((a) => a.id).sort()).toEqual(["pln_rb1", "pln_rb2"]);
+    const hits = await store.search("rebuild");
+    expect(hits.map((a) => a.id)).toEqual(["pln_rb1"]);
   });
 });

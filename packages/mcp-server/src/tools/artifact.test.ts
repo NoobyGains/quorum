@@ -38,7 +38,7 @@ describe("artifact.read / list / search", () => {
   beforeEach(async () => {
     tmpHome = mkdtempSync(join(tmpdir(), "quorum-mcp-artifact-"));
     const cwd = "/fake/project/mcp-artifact-test";
-    store = new Store(cwd, { homeDir: tmpHome, warn: () => {} });
+    store = new Store(cwd, { homeDir: tmpHome });
     const server = createServer({ storeFactory: () => store });
     const [ct, st] = InMemoryTransport.createLinkedPair();
     client = new Client(

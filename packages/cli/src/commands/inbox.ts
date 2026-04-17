@@ -304,7 +304,7 @@ export interface RunInboxOptions {
 }
 
 function defaultStoreFactory(cwd: string, homeDir: string): Store {
-  return new Store(cwd, { homeDir, warn: () => {} });
+  return new Store(cwd, { homeDir });
 }
 
 /**

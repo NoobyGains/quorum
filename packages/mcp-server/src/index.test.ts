@@ -27,7 +27,6 @@ function withTmpStore(): {
   const tmpHome = mkdtempSync(join(tmpdir(), "quorum-mcp-index-"));
   const store = new Store("/fake/project/mcp-index-test", {
     homeDir: tmpHome,
-    warn: () => {},
   });
   return {
     factory: () => store,

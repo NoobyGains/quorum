@@ -190,7 +190,7 @@ export interface RunPresenceOptions {
 }
 
 function defaultStoreFactory(cwd: string, homeDir: string): Store {
-  return new Store(cwd, { homeDir, warn: () => {} });
+  return new Store(cwd, { homeDir });
 }
 
 /** Top-level entry for the `presence` subcommand. Always exits 0 on success. */

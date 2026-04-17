@@ -259,7 +259,7 @@ describe("collectInbox", () => {
 
   beforeEach(() => {
     tmpHome = mkdtempSync(join(tmpdir(), "quorum-inbox-col-"));
-    store = new Store(CWD, { homeDir: tmpHome, warn: () => {} });
+    store = new Store(CWD, { homeDir: tmpHome });
   });
 
   afterEach(async () => {
@@ -419,7 +419,7 @@ describe("runInbox", () => {
   });
 
   function factory(cwd: string, homeDir: string): Store {
-    return new Store(cwd, { homeDir, warn: () => {} });
+    return new Store(cwd, { homeDir });
   }
 
   it("returns 0 and prints zero-count message when the inbox is empty", async () => {
@@ -443,7 +443,7 @@ describe("runInbox", () => {
     const env = makeEnv({ homeDir: tmpHome });
 
     // seed one plan
-    const seedStore = new Store(CWD, { homeDir: tmpHome, warn: () => {} });
+    const seedStore = new Store(CWD, { homeDir: tmpHome });
     await seedStore.write(
       makePlan("pln_1", {
         author: "codex",
@@ -479,7 +479,7 @@ describe("runInbox", () => {
 
   it("does NOT advance last_seen when --unread is not passed", async () => {
     const env = makeEnv({ homeDir: tmpHome });
-    const seedStore = new Store(CWD, { homeDir: tmpHome, warn: () => {} });
+    const seedStore = new Store(CWD, { homeDir: tmpHome });
     await seedStore.write(
       makePlan("pln_1", {
         author: "codex",
@@ -499,7 +499,7 @@ describe("runInbox", () => {
   });
 
   it("--json emits a parseable payload", async () => {
-    const seedStore = new Store(CWD, { homeDir: tmpHome, warn: () => {} });
+    const seedStore = new Store(CWD, { homeDir: tmpHome });
     await seedStore.write(
       makePlan("pln_j", {
         author: "codex",
