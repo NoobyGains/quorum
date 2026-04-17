@@ -236,8 +236,15 @@ export class GitRefsStore {
     } catch {
       return null;
     }
-    const parsed = ArtifactSchema.safeParse(JSON.parse(blobContent));
-    return parsed.success ? parsed.data : null;
+    // #55: JSON.parse used to live outside this try, so corrupt blobs
+    // threw up through every caller instead of producing the documented
+    // null return. Keep parse + schema-validate inside a single catch.
+    try {
+      const parsed = ArtifactSchema.safeParse(JSON.parse(blobContent));
+      return parsed.success ? parsed.data : null;
+    } catch {
+      return null;
+    }
   }
 
   /**

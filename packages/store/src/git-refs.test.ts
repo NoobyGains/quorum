@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createClaim, createPlan, type Artifact } from "@quorum/artifacts";
+import { simpleGit } from "simple-git";
 
 import { GitRefsStore, refForArtifact } from "./git-refs.js";
+import { gitRepoPath } from "./paths.js";
 
 function makePlan(id = "pln_t1", overrides: Partial<Parameters<typeof createPlan>[0]> = {}) {
   return createPlan({
@@ -141,5 +143,60 @@ describe("GitRefsStore", () => {
     await expect(store.supersede("pln_nope", v2)).rejects.toThrow(
       /no artifact with id/,
     );
+  });
+
+  // Regression #55: readByRef's doc promises a null return when the blob
+  // can't be parsed, but JSON.parse was outside the surrounding try/catch,
+  // so a corrupt blob threw SyntaxError up through every caller.
+  it("readByRef returns null when the blob is not valid JSON", async () => {
+    // Seed a real artifact so the bare repo is initialized.
+    await store.write(makePlan("pln_seedcorrupt"));
+
+    // Now plant a corrupt blob at refs/coord/plans/pln_corrupt using the
+    // same plumbing the store uses (hash-object + mktree-by-hand + commit).
+    const repoPath = gitRepoPath(tmp);
+    const git = simpleGit(repoPath);
+    const scratch = mkdtempSync(join(tmpdir(), "quorum-corrupt-"));
+    try {
+      const badFile = join(scratch, "artifact.json");
+      writeFileSync(badFile, "this is not JSON {{{", "utf8");
+      const blobSha = (
+        await git.raw(["hash-object", "-w", badFile])
+      ).trim();
+      // Tree format: "100644 artifact.json\0<20-byte-binary-sha>"
+      const header = Buffer.from("100644 artifact.json\0", "utf8");
+      const shaBin = Buffer.from(blobSha, "hex");
+      const treeBin = Buffer.concat([header, shaBin]);
+      const treeFile = join(scratch, "tree.bin");
+      writeFileSync(treeFile, treeBin);
+      const treeSha = (
+        await git.raw(["hash-object", "-w", "-t", "tree", treeFile])
+      ).trim();
+      const commitSha = (
+        await git.raw([
+          "-c",
+          "user.name=test",
+          "-c",
+          "user.email=test@local",
+          "commit-tree",
+          treeSha,
+          "-m",
+          "corrupt",
+        ])
+      ).trim();
+      await git.raw([
+        "update-ref",
+        "refs/coord/plans/pln_corrupt",
+        commitSha,
+      ]);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
+
+    await expect(
+      store.readByRef("refs/coord/plans/pln_corrupt"),
+    ).resolves.toBeNull();
+    // `read` shares the same parse path — exercise it too.
+    await expect(store.read("pln_corrupt")).resolves.toBeNull();
   });
 });
