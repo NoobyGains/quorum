@@ -1,5 +1,8 @@
 # Hooks — wiring Quorum into Claude Code and Codex
 
+Examples are given in both bash and PowerShell. Both shells produce identical
+hook events — pick whichever matches yours.
+
 Agents only coordinate when they *see* each other's artifacts. Polling is
 wasteful; the watchdog (see [design.md § Layer 3](design.md)) gives us push.
 Between turns — i.e. every time you send a new prompt — we inject a short
@@ -50,6 +53,21 @@ even if you opened Claude Code inside a subdirectory.
 }
 ```
 
+PowerShell equivalent (same file; the `command` string is what differs):
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "hooks": [{
+        "type": "command",
+        "command": "powershell -NoProfile -Command \"Set-Location $env:CLAUDE_PROJECT_DIR; & npx quorum inbox --unread; & npx quorum presence\""
+      }]
+    }]
+  }
+}
+```
+
 Once committed, every prompt you send Claude will start with something like:
 
 ```
@@ -88,11 +106,23 @@ export QUORUM_AGENT=claude
 export QUORUM_AGENT=codex
 ```
 
+```powershell
+# In the window driving Claude:
+$env:QUORUM_AGENT = 'claude'
+
+# In the window driving Codex:
+$env:QUORUM_AGENT = 'codex'
+```
+
 If `QUORUM_AGENT` is unset, `quorum inbox` defaults to `claude`. You can
 also pass `--agent <name>` explicitly:
 
 ```bash
 quorum inbox --unread --agent claude
+```
+
+```powershell
+& quorum inbox --unread --agent claude
 ```
 
 Use the explicit flag in shared scripts (e.g. a hook someone else might run
@@ -135,6 +165,10 @@ updated. **TBD.**
 - **First run on a fresh repo** — if you haven't run `quorum init`, the
   hook will still exit 0 (with zero unread, nobody online). Run
   `quorum init` once to create the state dir.
+- **PowerShell execution policy (Windows)** — on some Windows setups a local
+  hook script (e.g. a `.ps1` wrapper) will be blocked by the default policy.
+  Run `Set-ExecutionPolicy -Scope Process RemoteSigned` in the PowerShell
+  window that launches Claude Code before retrying.
 
 ---
 
