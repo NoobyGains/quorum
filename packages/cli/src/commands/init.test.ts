@@ -6,6 +6,7 @@ import {
   rmSync,
   statSync,
   unlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -14,6 +15,7 @@ import { createPlan } from "@quorum/artifacts";
 import { INDEX_DB_FILENAME, Store, projectHash, storageRoot } from "@quorum/store";
 
 import {
+  GITATTRIBUTES_CONTENT,
   initProject,
   runInit,
   type InitEnv,
@@ -93,6 +95,43 @@ describe("initProject (filesystem side-effects)", () => {
     const a = initProject(envA);
     const b = initProject(envB);
     expect(a.stateDir).not.toBe(b.stateDir);
+  });
+
+  it("creates .gitattributes when missing", () => {
+    // Per-project root must exist on disk for init to drop the file (the
+    // production flow runs against a real cwd). Use a tmp dir as the
+    // project root and point homeDir to the same fixture for isolation.
+    const projectRoot = mkdtempSync(join(tmpdir(), "quorum-init-ga-"));
+    try {
+      const env = makeEnv({ cwd: projectRoot, homeDir: tmpHome });
+      const gitattributesPath = join(projectRoot, ".gitattributes");
+      expect(existsSync(gitattributesPath)).toBe(false);
+
+      initProject(env);
+
+      expect(existsSync(gitattributesPath)).toBe(true);
+      expect(readFileSync(gitattributesPath, "utf8")).toBe(
+        GITATTRIBUTES_CONTENT,
+      );
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("leaves an existing .gitattributes untouched", () => {
+    const projectRoot = mkdtempSync(join(tmpdir(), "quorum-init-ga-"));
+    try {
+      const gitattributesPath = join(projectRoot, ".gitattributes");
+      const bogus = "# user's hand-tuned rules — do not touch\n*.md text\n";
+      writeFileSync(gitattributesPath, bogus, "utf8");
+
+      const env = makeEnv({ cwd: projectRoot, homeDir: tmpHome });
+      initProject(env);
+
+      expect(readFileSync(gitattributesPath, "utf8")).toBe(bogus);
+    } finally {
+      rmSync(projectRoot, { recursive: true, force: true });
+    }
   });
 
   it("repairs a partial init where index.db was deleted", () => {
