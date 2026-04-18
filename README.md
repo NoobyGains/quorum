@@ -26,7 +26,26 @@ Replace chat with a **typed, git-backed artifact store** and **protocol-enforced
 
 ## Status
 
-**Pre-alpha.** Design is locked. Implementation begins at M0. Follow the [roadmap](ROADMAP.md).
+**Pre-alpha. M1 in progress.** 22 issues shipped, 54 open. CLI and MCP are usable today; Rust watchdog daemon and campaign dashboard land in M2.
+
+Seven packages in a pnpm workspace — `@quorum/artifacts`, `@quorum/store`, `@quorum/protocols`, `@quorum/cli`, `@quorum/mcp-server`, `@quorum/watchdog-client`, `create-quorum-app` — with 358 tests passing across the repo.
+
+The `quorum` CLI ships `install`, `doctor`, `inbox`, `presence`, `init`, and (in flight) `sprint`. The MCP server exposes all 12 typed artifacts as tools (`plan_create`, `claim_create`, `hypothesis_create`, `experiment_create`, `result_create`, `decision_create`, `question_create`, `commitment_create`, `disagreement_create`, `handoff_create`, `review_create`, `risk_flag_create`) plus `artifact_read`, `artifact_list`, `artifact_search`, and `ping`.
+
+**Cross-vendor review is live.** This session alone ran two full cycles: Claude wrote code, Codex blocked with structured critiques via the `Review` tool, Claude addressed each point. Issue #56 closed that way. The protocol works end-to-end.
+
+## Try it in 60 seconds
+
+```bash
+# one-time: wire MCP + hooks
+quorum install
+
+# scaffold a new app
+npm create quorum-app my-thing
+cd my-thing && pnpm install && pnpm dev
+```
+
+`create-quorum-app` scaffolds a Next.js 15 app-router project with a `.quorum/conventions.md` that anchors cross-vendor AI review from commit zero. See the [scaffolded-app README template](packages/create-quorum-app/templates/nextjs/README.md) for what users get.
 
 ## Quick links
 

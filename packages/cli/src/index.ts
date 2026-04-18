@@ -3,12 +3,24 @@
 // Entry point: registers subcommands with commander.
 // See ROADMAP.md M0 for the specification.
 
+import { homedir } from "node:os";
+
 import { Command } from "commander";
+import { Store } from "@quorum/store";
+
 import { runDoctor } from "./commands/doctor.js";
 import { runInbox, type InboxOptions } from "./commands/inbox.js";
 import { runInit } from "./commands/init.js";
 import { runInstall, type InstallOptions } from "./commands/install.js";
 import { runPresence, type PresenceOptions } from "./commands/presence.js";
+import {
+  defaultTasksFromGoal,
+  loadTasksFromFile,
+  makeMockWorker,
+  notImplementedWorker,
+  runSprint,
+  type SprintTask,
+} from "./commands/sprint.js";
 
 export const CLI_VERSION = "0.0.0" as const;
 
@@ -59,6 +71,73 @@ export function buildProgram(): Command {
       const code = await runPresence({ flags: opts });
       process.exit(code);
     });
+
+  program
+    .command("sprint <goal>")
+    .description(
+      "Dispatch parallel workers under a budget cap (MVP — issue #78)",
+    )
+    .option("--max-agents <n>", "max concurrent workers", "3")
+    .option("--budget-usd <n>", "hard spend cap (USD)", "10")
+    .option("--dry-run", "print the plan without executing")
+    .option("--tasks <path>", "JSON file with a task array")
+    .option(
+      "--worker <name>",
+      "worker implementation: mock | real (real spawns `claude -p`, not yet wired)",
+      "real",
+    )
+    .action(
+      async (
+        goal: string,
+        opts: {
+          maxAgents: string;
+          budgetUsd: string;
+          dryRun?: boolean;
+          tasks?: string;
+          worker: string;
+        },
+      ) => {
+        let tasks: SprintTask[];
+        try {
+          tasks = opts.tasks
+            ? await loadTasksFromFile(opts.tasks)
+            : defaultTasksFromGoal(goal);
+        } catch (err) {
+          process.stderr.write(
+            (err instanceof Error ? err.message : String(err)) + "\n",
+          );
+          process.exit(2);
+        }
+
+        const worker =
+          opts.worker === "mock" ? makeMockWorker() : notImplementedWorker;
+
+        const store = opts.dryRun
+          ? null
+          : {
+              write: async (a: Parameters<Store["write"]>[0]) => {
+                const real = new Store(process.cwd(), { homeDir: homedir() });
+                await real.write(a);
+              },
+            };
+
+        const res = await runSprint({
+          goal,
+          tasks,
+          maxAgents: Number.parseInt(opts.maxAgents, 10),
+          budgetUsd: Number.parseFloat(opts.budgetUsd),
+          dryRun: opts.dryRun === true,
+          worker,
+          store,
+          stdout: (m) =>
+            process.stdout.write(m.endsWith("\n") ? m : m + "\n"),
+          stderr: (m) =>
+            process.stderr.write(m.endsWith("\n") ? m : m + "\n"),
+          now: () => new Date(),
+        });
+        process.exit(res.exitCode);
+      },
+    );
 
   program
     .command("install")
