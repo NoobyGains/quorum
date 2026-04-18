@@ -27,7 +27,7 @@ export default tseslint.config(
       '**/.turbo/**',
       // Don't lint this config file with typed rules (it's plain JS and has
       // no tsconfig entry). The file is small and self-contained.
-      'eslint.config.js',
+      'eslint.config.mjs',
     ],
   },
   js.configs.recommended,
