@@ -50,6 +50,8 @@ function allGreenEnv(overrides: Partial<DoctorEnv> = {}): DoctorEnv {
       gh: { stdout: "gh version 2.40.0\n" },
       claude: { stdout: "claude 0.1.0\n" },
       codex: { stdout: "codex 0.2.0\n" },
+      rustup: { stdout: "rustup 1.27.1\n" },
+      cargo: { stdout: "cargo 1.80.0\n" },
     }),
     fs: makeFs(true),
     ...overrides,
@@ -72,7 +74,7 @@ describe("parseNodeMajor", () => {
 });
 
 describe("runChecks — happy path", () => {
-  it("returns 8 checks, all ok when everything is available", async () => {
+  it("returns 10 checks, all ok when everything is available", async () => {
     const env = allGreenEnv();
     // `git rev-parse` has to succeed with stdout=true; layer that stub on top.
     env.run = makeRunner({
@@ -81,6 +83,8 @@ describe("runChecks — happy path", () => {
       gh: { stdout: "gh version 2.40.0" },
       claude: { stdout: "claude 0.1.0" },
       codex: { stdout: "codex 0.2.0" },
+      rustup: { stdout: "rustup 1.27.1" },
+      cargo: { stdout: "cargo 1.80.0" },
     });
     // Wrap to handle the `git rev-parse` call too.
     const base = env.run;
@@ -92,7 +96,7 @@ describe("runChecks — happy path", () => {
     };
 
     const results = await runChecks(env);
-    expect(results).toHaveLength(8);
+    expect(results).toHaveLength(10);
     expect(results.every((r) => r.status === "ok")).toBe(true);
     expect(exitCodeFor(results)).toBe(0);
   });
@@ -138,6 +142,36 @@ describe("runChecks — failures and warnings", () => {
     expect(codex.status).toBe("warn");
     expect(codex.critical).toBe(false);
     // The exit code still reflects only critical failures.
+    expect(exitCodeFor(results)).toBe(0);
+  });
+
+  it("treats missing rustup and cargo as optional warnings, not failures", async () => {
+    const env = allGreenEnv();
+    env.run = makeRunner({
+      pnpm: { stdout: "9.0.0" },
+      git: { stdout: "git version 2.43.0" },
+      gh: { stdout: "gh version 2.40.0" },
+      claude: { stdout: "claude 0.1.0" },
+      codex: { stdout: "codex 0.2.0" },
+      // rustup + cargo missing
+    });
+    const base = env.run;
+    env.run = async (cmd, args, opts) => {
+      if (cmd === "git" && args[0] === "rev-parse") {
+        return { exitCode: 0, stdout: "true\n", stderr: "" };
+      }
+      return base(cmd, args, opts);
+    };
+
+    const results = await runChecks(env);
+    const rustup = results.find((r) => r.label.includes("rustup"))!;
+    const cargo = results.find((r) => r.label.includes("cargo"))!;
+    expect(rustup.status).toBe("warn");
+    expect(rustup.critical).toBe(false);
+    expect(rustup.message).toMatch(/rustup\.rs/);
+    expect(cargo.status).toBe("warn");
+    expect(cargo.critical).toBe(false);
+    expect(cargo.message).toMatch(/rustup/);
     expect(exitCodeFor(results)).toBe(0);
   });
 

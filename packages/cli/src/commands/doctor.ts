@@ -98,7 +98,9 @@ export function parseNodeMajor(version: string): number {
   return Number.parseInt(match[1], 10);
 }
 
-async function probeBinary(
+// Exported for integration testing only — exercises the real child_process
+// spawn path in doctor.real-spawn.test.ts. Not part of the public API.
+export async function probeBinary(
   run: CommandRunner,
   cmd: string,
   args: readonly string[] = ["--version"],
@@ -181,6 +183,28 @@ export async function runChecks(env: DoctorEnv): Promise<CheckResult[]> {
       ? codex.version || "present"
       : "codex not found on PATH — optional, skipping",
     status: codex.available ? "ok" : "warn",
+    critical: false,
+  });
+
+  // rustup (optional) — needed for the watchdog daemon
+  const rustup = await probeBinary(env.run, "rustup");
+  results.push({
+    label: "rustup available (optional)",
+    message: rustup.available
+      ? rustup.version || "present"
+      : "rustup not found on PATH — install from https://rustup.rs if you plan to work on the watchdog daemon",
+    status: rustup.available ? "ok" : "warn",
+    critical: false,
+  });
+
+  // cargo (optional) — ships with rustup toolchain
+  const cargo = await probeBinary(env.run, "cargo");
+  results.push({
+    label: "cargo available (optional)",
+    message: cargo.available
+      ? cargo.version || "present"
+      : "cargo not found on PATH — install via rustup from https://rustup.rs if you plan to work on the watchdog daemon",
+    status: cargo.available ? "ok" : "warn",
     critical: false,
   });
 
