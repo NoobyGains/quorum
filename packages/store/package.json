@@ -21,7 +21,7 @@
   "dependencies": {
     "@quorum/artifacts": "workspace:*",
     "better-sqlite3": "12.9.0",
-    "simple-git": "3.29.0"
+    "simple-git": "3.36.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "7.6.13",
