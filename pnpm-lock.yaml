@@ -37,14 +37,14 @@ importers:
         version: 3.25.76
     devDependencies:
       '@types/node':
-        specifier: 20.17.6
-        version: 20.17.6
+        specifier: 25.6.0
+        version: 25.6.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       vitest:
         specifier: 2.1.9
-        version: 2.1.9(@types/node@20.17.6)
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/cli:
     dependencies:
@@ -59,26 +59,26 @@ importers:
         version: 14.0.3
     devDependencies:
       '@types/node':
-        specifier: 20.17.6
-        version: 20.17.6
+        specifier: 25.6.0
+        version: 25.6.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       vitest:
         specifier: 2.1.9
-        version: 2.1.9(@types/node@20.17.6)
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/create-quorum-app:
     devDependencies:
       '@types/node':
-        specifier: 20.17.6
-        version: 20.17.6
+        specifier: 25.6.0
+        version: 25.6.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       vitest:
         specifier: 2.1.9
-        version: 2.1.9(@types/node@20.17.6)
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/mcp-server:
     dependencies:
@@ -96,14 +96,14 @@ importers:
         version: 3.25.76
     devDependencies:
       '@types/node':
-        specifier: 20.17.6
-        version: 20.17.6
+        specifier: 25.6.0
+        version: 25.6.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       vitest:
         specifier: 2.1.9
-        version: 2.1.9(@types/node@20.17.6)
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/protocols:
     dependencies:
@@ -115,14 +115,14 @@ importers:
         version: link:../store
     devDependencies:
       '@types/node':
-        specifier: 20.17.6
-        version: 20.17.6
+        specifier: 25.6.0
+        version: 25.6.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       vitest:
         specifier: 2.1.9
-        version: 2.1.9(@types/node@20.17.6)
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/store:
     dependencies:
@@ -140,26 +140,26 @@ importers:
         specifier: 7.6.13
         version: 7.6.13
       '@types/node':
-        specifier: 20.17.6
-        version: 20.17.6
+        specifier: 25.6.0
+        version: 25.6.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       vitest:
         specifier: 2.1.9
-        version: 2.1.9(@types/node@20.17.6)
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/watchdog-client:
     devDependencies:
       '@types/node':
-        specifier: 20.17.6
-        version: 20.17.6
+        specifier: 25.6.0
+        version: 25.6.0
       typescript:
         specifier: 5.8.3
         version: 5.8.3
       vitest:
         specifier: 2.1.9
-        version: 2.1.9(@types/node@20.17.6)
+        version: 2.1.9(@types/node@25.6.0)
 
 packages:
 
@@ -414,79 +414,66 @@ packages:
     resolution: {integrity: sha512-L+34Qqil+v5uC0zEubW7uByo78WOCIrBvci69E7sFASRl0X7b/MB6Cqd1lky/CtcSVTydWa2WZwFuWexjS5o6g==}
     cpu: [arm]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-arm-musleabihf@4.60.1':
     resolution: {integrity: sha512-n83O8rt4v34hgFzlkb1ycniJh7IR5RCIqt6mz1VRJD6pmhRi0CXdmfnLu9dIUS6buzh60IvACM842Ffb3xd6Gg==}
     cpu: [arm]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-arm64-gnu@4.60.1':
     resolution: {integrity: sha512-Nql7sTeAzhTAja3QXeAI48+/+GjBJ+QmAH13snn0AJSNL50JsDqotyudHyMbO2RbJkskbMbFJfIJKWA6R1LCJQ==}
     cpu: [arm64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-arm64-musl@4.60.1':
     resolution: {integrity: sha512-+pUymDhd0ys9GcKZPPWlFiZ67sTWV5UU6zOJat02M1+PiuSGDziyRuI/pPue3hoUwm2uGfxdL+trT6Z9rxnlMA==}
     cpu: [arm64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-loong64-gnu@4.60.1':
     resolution: {integrity: sha512-VSvgvQeIcsEvY4bKDHEDWcpW4Yw7BtlKG1GUT4FzBUlEKQK0rWHYBqQt6Fm2taXS+1bXvJT6kICu5ZwqKCnvlQ==}
     cpu: [loong64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-loong64-musl@4.60.1':
     resolution: {integrity: sha512-4LqhUomJqwe641gsPp6xLfhqWMbQV04KtPp7/dIp0nzPxAkNY1AbwL5W0MQpcalLYk07vaW9Kp1PBhdpZYYcEw==}
     cpu: [loong64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-ppc64-gnu@4.60.1':
     resolution: {integrity: sha512-tLQQ9aPvkBxOc/EUT6j3pyeMD6Hb8QF2BTBnCQWP/uu1lhc9AIrIjKnLYMEroIz/JvtGYgI9dF3AxHZNaEH0rw==}
     cpu: [ppc64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-ppc64-musl@4.60.1':
     resolution: {integrity: sha512-RMxFhJwc9fSXP6PqmAz4cbv3kAyvD1etJFjTx4ONqFP9DkTkXsAMU4v3Vyc5BgzC+anz7nS/9tp4obsKfqkDHg==}
     cpu: [ppc64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-riscv64-gnu@4.60.1':
     resolution: {integrity: sha512-QKgFl+Yc1eEk6MmOBfRHYF6lTxiiiV3/z/BRrbSiW2I7AFTXoBFvdMEyglohPj//2mZS4hDOqeB0H1ACh3sBbg==}
     cpu: [riscv64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-riscv64-musl@4.60.1':
     resolution: {integrity: sha512-RAjXjP/8c6ZtzatZcA1RaQr6O1TRhzC+adn8YZDnChliZHviqIjmvFwHcxi4JKPSDAt6Uhf/7vqcBzQJy0PDJg==}
     cpu: [riscv64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-linux-s390x-gnu@4.60.1':
     resolution: {integrity: sha512-wcuocpaOlaL1COBYiA89O6yfjlp3RwKDeTIA0hM7OpmhR1Bjo9j31G1uQVpDlTvwxGn2nQs65fBFL5UFd76FcQ==}
     cpu: [s390x]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-x64-gnu@4.60.1':
     resolution: {integrity: sha512-77PpsFQUCOiZR9+LQEFg9GClyfkNXj1MP6wRnzYs0EeWbPcHs02AXu4xuUbM1zhwn3wqaizle3AEYg5aeoohhg==}
     cpu: [x64]
     os: [linux]
-    libc: [glibc]
 
   '@rollup/rollup-linux-x64-musl@4.60.1':
     resolution: {integrity: sha512-5cIATbk5vynAjqqmyBjlciMJl1+R/CwX9oLk/EyiFXDWd95KpHdrOJT//rnUl4cUcskrd0jCCw3wpZnhIHdD9w==}
     cpu: [x64]
     os: [linux]
-    libc: [musl]
 
   '@rollup/rollup-openbsd-x64@4.60.1':
     resolution: {integrity: sha512-cl0w09WsCi17mcmWqqglez9Gk8isgeWvoUZ3WiJFYSR3zjBQc2J5/ihSjpl+VLjPqjQ/1hJRcqBfLjssREQILw==}
@@ -557,8 +544,8 @@ packages:
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
-  '@types/node@20.17.6':
-    resolution: {integrity: sha512-VEI7OdvK2wP7XHnsuXbAJnEpEkF6NjSN45QJlL4VGqZSXsnicpesdTWsg9RISeSdYd3yeRj/y3k5KGjUXYnFwQ==}
+  '@types/node@25.6.0':
+    resolution: {integrity: sha512-+qIYRKdNYJwY3vRCZMdJbPLJAtGjQBudzZzdzwQYkEPQd+PJGixUL5QfvCLDaULoLv+RhT3LDkwEfKaAkgSmNQ==}
 
   '@typescript-eslint/eslint-plugin@8.58.2':
     resolution: {integrity: sha512-aC2qc5thQahutKjP+cl8cgN9DWe3ZUqVko30CMSZHnFEHyhOYoZSzkGtAI2mcwZ38xeImDucI4dnqsHiOYuuCw==}
@@ -1493,8 +1480,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  undici-types@6.19.8:
-    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
+  undici-types@7.19.2:
+    resolution: {integrity: sha512-qYVnV5OEm2AW8cJMCpdV20CDyaN3g0AjDlOGf1OW4iaDEx8MwdtChUp4zu4H0VP3nDRF/8RKWH+IPp9uW0YGZg==}
 
   unpipe@1.0.0:
     resolution: {integrity: sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==}
@@ -1859,15 +1846,15 @@ snapshots:
 
   '@types/better-sqlite3@7.6.13':
     dependencies:
-      '@types/node': 20.17.6
+      '@types/node': 25.6.0
 
   '@types/estree@1.0.8': {}
 
   '@types/json-schema@7.0.15': {}
 
-  '@types/node@20.17.6':
+  '@types/node@25.6.0':
     dependencies:
-      undici-types: 6.19.8
+      undici-types: 7.19.2
 
   '@typescript-eslint/eslint-plugin@8.58.2(@typescript-eslint/parser@8.58.2(eslint@9.39.4)(typescript@5.8.3))(eslint@9.39.4)(typescript@5.8.3)':
     dependencies:
@@ -1967,13 +1954,13 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@20.17.6))':
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@25.6.0))':
     dependencies:
       '@vitest/spy': 2.1.9
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 5.4.21(@types/node@20.17.6)
+      vite: 5.4.21(@types/node@25.6.0)
 
   '@vitest/pretty-format@2.1.9':
     dependencies:
@@ -2892,7 +2879,7 @@ snapshots:
 
   typescript@5.8.3: {}
 
-  undici-types@6.19.8: {}
+  undici-types@7.19.2: {}
 
   unpipe@1.0.0: {}
 
@@ -2904,13 +2891,13 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vite-node@2.1.9(@types/node@20.17.6):
+  vite-node@2.1.9(@types/node@25.6.0):
     dependencies:
       cac: 6.7.14
       debug: 4.4.3
       es-module-lexer: 1.7.0
       pathe: 1.1.2
-      vite: 5.4.21(@types/node@20.17.6)
+      vite: 5.4.21(@types/node@25.6.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -2922,19 +2909,19 @@ snapshots:
       - supports-color
       - terser
 
-  vite@5.4.21(@types/node@20.17.6):
+  vite@5.4.21(@types/node@25.6.0):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.5.10
       rollup: 4.60.1
     optionalDependencies:
-      '@types/node': 20.17.6
+      '@types/node': 25.6.0
       fsevents: 2.3.3
 
-  vitest@2.1.9(@types/node@20.17.6):
+  vitest@2.1.9(@types/node@25.6.0):
     dependencies:
       '@vitest/expect': 2.1.9
-      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@20.17.6))
+      '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.6.0))
       '@vitest/pretty-format': 2.1.9
       '@vitest/runner': 2.1.9
       '@vitest/snapshot': 2.1.9
@@ -2950,11 +2937,11 @@ snapshots:
       tinyexec: 0.3.2
       tinypool: 1.1.1
       tinyrainbow: 1.2.0
-      vite: 5.4.21(@types/node@20.17.6)
-      vite-node: 2.1.9(@types/node@20.17.6)
+      vite: 5.4.21(@types/node@25.6.0)
+      vite-node: 2.1.9(@types/node@25.6.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 20.17.6
+      '@types/node': 25.6.0
     transitivePeerDependencies:
       - less
       - lightningcss
